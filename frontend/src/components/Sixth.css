@@ -1,0 +1,110 @@
+.sixth-page {
+  padding-top: 170px;  
+  background: var(--gradient-primary);
+  min-height: 100vh;
+  position: relative; /* needed for snowfall absolute positioning */
+}
+
+.game-page {
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.game-title {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+}
+
+.game-slider {
+  max-width: 980px;
+  margin: 0 auto;
+  padding-top: var(--space-sm);
+}
+
+.game-slider-inner {
+  margin-top: var(--space-2xl);
+}
+
+.game-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  height: 450px;
+  color: var(--text-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+}
+
+.game-card-media {
+  height: 224px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--gradient-primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game-card-avatar {
+  height: 160px;
+  width: 160px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.game-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+
+.game-card-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.game-button {
+  padding: 10px 18px;
+}
+
+.game-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: var(--z-overlay);
+}
+
+
+.slick-slide > div {
+  margin: 0 10px !important;
+}
+
+body.hide-navbar .navbar { display: none !important; }
+
+.profile-pic {
+  position: absolute;
+  top: 20px;       /* adjust spacing from top */
+  right: 20px;     /* adjust spacing from right */
+  z-index: 1000;   /* keep it on top */
+}
+
+.profile-pic img {
+  width: 50px;     /* smaller size */
+  height: 50px;
+  border-radius: 50%;   /* circle */
+  border: 2px solid var(--text-primary);  /* white border */
+  box-shadow: var(--shadow-sm); /* soft shadow */
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.profile-pic img:hover {
+  transform: scale(1.1);  /* zoom effect on hover */
+}

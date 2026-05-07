@@ -1,0 +1,33 @@
+{
+  "name": "learncraft",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n frontend,backend -c green,cyan \"node ./frontend/node_modules/vite/bin/vite.js --config ./frontend/vite.config.js --root ./frontend\" \"node ./backend/node_modules/nodemon/bin/nodemon.js ./backend/server.js\"",
+    "dev:frontend": "node ./frontend/node_modules/vite/bin/vite.js --config ./frontend/vite.config.js --root ./frontend",
+    "dev:backend": "node ./backend/node_modules/nodemon/bin/nodemon.js ./backend/server.js",
+    "prepare": "husky install",
+    "lint": "npm --prefix frontend run lint && npm --prefix backend run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.4.2"
+  },
+  "lint-staged": {
+    "frontend/**/*.{js,jsx}": [
+      "npm --prefix frontend run lint -- --fix",
+      "prettier --write"
+    ],
+    "backend/**/*.js": [
+      "npm --prefix backend run lint -- --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
+  }
+}

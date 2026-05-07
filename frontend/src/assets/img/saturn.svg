@@ -1,0 +1,33 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="400" height="400">
+<style>:root {\n  --svg-color-a84ad7: var(--svg-color-a84ad7);
+  --svg-color-1d1b69: var(--svg-color-1d1b69);
+  --svg-color-2c2c78: var(--svg-color-2c2c78);
+  --svg-color-bbb: var(--svg-color-bbb);
+  --svg-color-eee: var(--svg-color-eee);\n}</style>
+  <!-- Stars -->
+  <circle cx="150" cy="100" r="3" fill="white"/>
+  <circle cx="600" cy="200" r="2" fill="white"/>
+  <circle cx="700" cy="500" r="4" fill="white"/>
+  <circle cx="250" cy="600" r="2" fill="white"/>
+  <circle cx="500" cy="650" r="2.5" fill="white"/>
+
+  <!-- Planet (Saturn) -->
+  <defs>
+    <radialGradient id="planet" cx="30%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="var(--svg-color-a84ad7)"/>
+      <stop offset="100%" stop-color="var(--svg-color-1d1b69)"/>
+    </radialGradient>
+  </defs>
+  <circle cx="400" cy="400" r="140" fill="url(#planet)" />
+
+  <!-- Craters -->
+  <circle cx="360" cy="350" r="20" fill="var(--svg-color-2c2c78)"/>
+  <circle cx="450" cy="380" r="25" fill="var(--svg-color-2c2c78)"/>
+  <circle cx="390" cy="460" r="15" fill="var(--svg-color-2c2c78)"/>
+  <circle cx="440" cy="310" r="12" fill="var(--svg-color-2c2c78)"/>
+
+  <!-- Rings -->
+  <ellipse cx="400" cy="400" rx="220" ry="80" fill="none" stroke="var(--svg-color-bbb)" stroke-width="12" opacity="0.5"/>
+  <ellipse cx="400" cy="400" rx="230" ry="85" fill="none" stroke="var(--svg-color-eee)" stroke-width="4" opacity="0.3"/>
+</svg>
+
