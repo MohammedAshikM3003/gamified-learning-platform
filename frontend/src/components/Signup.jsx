@@ -4,9 +4,7 @@ import "animate.css";
 import starsImg from "../assets/img/stars2.png";
 import { Link, useNavigate } from "react-router-dom";
 import Snowfall from "./Snowfall";
-import { auth } from "../firebase";
-import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { firestoreService } from "../services/firestoreService.js";
+import { useAuth } from "../context/AuthContext";
 
 function Signup() {
   const [fullName, setFullName] = useState("");
@@ -16,32 +14,13 @@ function Signup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { signup, signupWithGoogle } = useAuth();
 
   const handleGoogleSignup = async () => {
     try {
       setLoading(true);
       setError("");
-
-      if (!auth) {
-        setError("Firebase is not initialized. Check your environment variables.");
-        return;
-      }
-
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      
-      // Store user info
-      const user = result.user;
-      console.log("User signed up:", user);
-      
-      // Create user profile in Firestore
-      await firestoreService.createUserProfile(user.uid, {
-        fullName: user.displayName || 'User',
-        email: user.email,
-        onboardingCompleted: false,
-      });
-      
-      // Navigate to onboarding
+      await signupWithGoogle();
       navigate("/onboarding");
     } catch (err) {
       console.error("Google signup error:", err);
@@ -79,30 +58,7 @@ function Signup() {
     try {
       setLoading(true);
       setError("");
-
-      if (!auth) {
-        setError("Firebase is not initialized. Check your environment variables.");
-        return;
-      }
-
-      // Create user with email and password
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Update profile with full name
-      await updateProfile(userCredential.user, {
-        displayName: fullName,
-      });
-
-      console.log("User created:", userCredential.user);
-      
-      // Create user profile in Firestore
-      await firestoreService.createUserProfile(userCredential.user.uid, {
-        fullName,
-        email,
-        onboardingCompleted: false,
-      });
-      
-      // Navigate to onboarding
+      await signup(email, password, fullName);
       navigate("/onboarding");
     } catch (err) {
       console.error("Email signup error:", err);

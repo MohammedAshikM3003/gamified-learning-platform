@@ -4,8 +4,7 @@ import "animate.css";
 import starsImg from "../assets/img/stars2.png";
 import { Link, useNavigate } from "react-router-dom";
 import Snowfall from "./Snowfall";
-import { auth } from "../firebase";
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { useAuth } from "../context/AuthContext";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -13,26 +12,14 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login, loginWithGoogle } = useAuth();
 
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
       setError("");
-
-      if (!auth) {
-        setError("Firebase is not initialized. Check your environment variables.");
-        return;
-      }
-
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      
-      // Store user info
-      const user = result.user;
-      console.log("User logged in:", user);
-      
-      // Navigate to home or dashboard
-      navigate("/");
+      await loginWithGoogle();
+      navigate("/dashboard");
     } catch (err) {
       console.error("Google login error:", err);
       if (err.code === "auth/popup-blocked") {
@@ -47,10 +34,27 @@ function Login() {
     }
   };
 
-  const handleEmailLogin = (e) => {
+  const handleEmailLogin = async (e) => {
     e.preventDefault();
-    // TODO: Implement email/password login
-    console.log("Email login:", email, password);
+    if (!email || !password) {
+      setError("Please enter email and password");
+      return;
+    }
+    try {
+      setLoading(true);
+      setError("");
+      await login(email, password);
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Email login error:", err);
+      if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+        setError("Invalid email or password");
+      } else {
+        setError(err.message || "Failed to log in");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -22,19 +22,28 @@ export const xpEngine = {
   /** XP required to reach a given level */
   xpForLevel: (level) => level * level * 100,
 
-  /** XP progress within the current level (0–1) */
+  /** XP progress within the current level */
   getLevelProgress: (xp) => {
-    const level = Math.floor(Math.sqrt(xp / 100));
+    const level = Math.floor(Math.sqrt((xp || 0) / 100));
     const currentLevelXp = level * level * 100;
-    const nextLevelXp = (level + 1) * (level + 1) * 100;
+    const nextLevelXp    = (level + 1) * (level + 1) * 100;
     return {
       level,
-      currentLevelXp,
-      nextLevelXp,
-      xpIntoLevel: xp - currentLevelXp,
-      xpToNextLevel: nextLevelXp - xp,
+      currentLevelXP: xp - currentLevelXp,  // XP earned in this level
+      xpToNextLevel:  nextLevelXp - xp,
       progressPercentage: Math.round(((xp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100),
     };
+  },
+
+  /** Tier name based on level */
+  getTierName: (level) => {
+    if (level >= 20) return 'GRAND MASTER';
+    if (level >= 15) return 'LEGEND';
+    if (level >= 10) return 'ELITE';
+    if (level >= 7)  return 'ADVANCED';
+    if (level >= 4)  return 'SCHOLAR';
+    if (level >= 2)  return 'APPRENTICE';
+    return 'NOVICE';
   },
 
   /** Combo multiplier for streaks of correct answers */

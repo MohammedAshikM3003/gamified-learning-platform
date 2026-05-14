@@ -67,7 +67,7 @@ export default function SkillAnalysis() {
           <div className="premium-card" style={{ background: 'var(--overlay-10)' }}>
             <div className="section-header" style={{ marginBottom: '16px' }}>
               <Brain className="section-icon" style={{ color: 'var(--secondary)' }} />
-              <h3 className="section-title" style={{ fontSize: '16px' }}>ONYX INSIGHTS</h3>
+              <h3 className="section-title" style={{ fontSize: '16px' }}>CRAFTON INSIGHTS</h3>
             </div>
             <p style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--text-secondary)' }}>
               Your learning velocity has increased by <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>24%</span> this week. However, Physics retention is lagging. I recommend allocating 20 minutes to Physics Mock Tests tomorrow.

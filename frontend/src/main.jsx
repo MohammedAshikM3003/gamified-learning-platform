@@ -9,19 +9,22 @@ import { TranslationProvider } from './TranslationContext.jsx'; // ⬅️ import
 import { ToastProvider } from './context/ToastContext.jsx';
 import ErrorBoundary from './components/common/ErrorBoundary.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { UserProgressProvider } from './context/UserProgressContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
         <AuthProvider>
-      <TranslationProvider>    {/* ⬅️ wrap App with provider */}
-        <ToastProvider>
-          <ErrorBoundary>
-            <App />
-          </ErrorBoundary>
-        </ToastProvider>
-      </TranslationProvider>
-      </AuthProvider>
+          <UserProgressProvider>
+            <TranslationProvider>
+              <ToastProvider>
+                <ErrorBoundary>
+                  <App />
+                </ErrorBoundary>
+              </ToastProvider>
+            </TranslationProvider>
+          </UserProgressProvider>
+        </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 );

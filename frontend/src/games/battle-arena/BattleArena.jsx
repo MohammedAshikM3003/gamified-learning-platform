@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { firestoreService } from '../../services/firestoreService';
+import { useProgress } from '../../context/UserProgressContext';
 import { battleEngine } from '../../game-engine/battleEngine';
 import { xpEngine } from '../../game-engine/xpEngine';
 import { enemies } from './battleData';
@@ -20,7 +20,8 @@ const PLAYER_MAX_HP = 100;
 
 export default function BattleArena({ topic }) {
   const navigate = useNavigate();
-  const { user, userProfile } = useAuth();
+  const { userProfile } = useAuth();
+  const { completeBattle } = useProgress();
   const enemy = enemies[topic.enemy] || enemies['syntax-phantom'];
   const questions = topic.questions || [];
   const subjectId = topic.subjectId || 'programming';
@@ -98,12 +99,12 @@ export default function BattleArena({ topic }) {
 
         if (newEnemyHp <= 0) {
           const finalXp = totalXp + xpGained;
-          const currentProgression = userProfile?.progression || { xp: 0, level: 1, streak: 0, coins: 0 };
-          const newXp = (currentProgression.xp || 0) + finalXp;
-          await firestoreService.updateUserStats(user.uid, {
-            ...currentProgression,
-            xp: newXp,
-            level: xpEngine.calculateLevel(newXp),
+          // ✅ Context handles: XP save, topic unlock, achievement check
+          await completeBattle({
+            topicId: topic.id,
+            xpGained: finalXp,
+            comboMax: Math.max(maxCombo, newCombo),
+            won: true,
           });
           setTimeout(() => setGamePhase('victory'), 400);
           return;
