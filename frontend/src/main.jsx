@@ -8,10 +8,12 @@ import App from './App.jsx';
 import { TranslationProvider } from './TranslationContext.jsx'; // ⬅️ import your context
 import { ToastProvider } from './context/ToastContext.jsx';
 import ErrorBoundary from './components/common/ErrorBoundary.jsx';
+import { AuthProvider } from './context/AuthContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
+        <AuthProvider>
       <TranslationProvider>    {/* ⬅️ wrap App with provider */}
         <ToastProvider>
           <ErrorBoundary>
@@ -19,6 +21,7 @@ createRoot(document.getElementById('root')).render(
           </ErrorBoundary>
         </ToastProvider>
       </TranslationProvider>
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 );

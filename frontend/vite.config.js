@@ -16,5 +16,8 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       react(),
     ],
+    optimizeDeps: {
+      exclude: ['firebase', 'firebase/auth', 'firebase/analytics'],
+    },
   }
 })

@@ -1,0 +1,327 @@
+/* Onboarding Styles - Using existing theme system */
+
+.onboarding-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f0f1e 0%, #1a0f2e 100%);
+  overflow: hidden;
+  padding: 20px;
+}
+
+.stars2-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.3;
+  z-index: 1;
+}
+
+.onboarding-card {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 600px;
+  background: rgba(20, 15, 45, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(138, 43, 226, 0.2);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 8px 32px rgba(138, 43, 226, 0.15);
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(138, 43, 226, 0.1);
+  border-radius: 2px;
+  margin-bottom: 30px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8a2be2, #d946ef);
+  transition: width 0.3s ease;
+}
+
+.onboarding-body {
+  min-height: 300px;
+  margin: 30px 0;
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.onboarding-content h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, #d946ef, #8a2be2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.onboarding-content > p:first-of-type {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.subjects-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.option-btn {
+  padding: 15px 20px;
+  background: rgba(138, 43, 226, 0.1);
+  border: 2px solid rgba(138, 43, 226, 0.3);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.option-btn:hover {
+  background: rgba(138, 43, 226, 0.2);
+  border-color: rgba(217, 70, 239, 0.5);
+  color: #fff;
+}
+
+.option-btn.active {
+  background: linear-gradient(135deg, #8a2be2, #d946ef);
+  border-color: #d946ef;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(217, 70, 239, 0.4);
+}
+
+.subject-btn {
+  padding: 12px 15px;
+  font-size: 13px;
+}
+
+.study-time-selector {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.study-slider {
+  width: 100%;
+  max-width: 300px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(138, 43, 226, 0.1);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  margin-bottom: 20px;
+}
+
+.study-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8a2be2, #d946ef);
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(217, 70, 239, 0.5);
+}
+
+.study-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8a2be2, #d946ef);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 15px rgba(217, 70, 239, 0.5);
+}
+
+.study-time-display {
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #d946ef, #8a2be2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 15px 20px;
+  background: rgba(138, 43, 226, 0.05);
+  border: 1px solid rgba(138, 43, 226, 0.2);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 12px 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.checkbox-label:hover {
+  background: rgba(138, 43, 226, 0.15);
+  border-color: rgba(217, 70, 239, 0.4);
+}
+
+.checkbox-input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #d946ef;
+}
+
+.summary-card {
+  background: rgba(138, 43, 226, 0.1);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.summary-card p {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.summary-card strong {
+  color: #d946ef;
+  font-weight: 600;
+}
+
+.onboarding-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(138, 43, 226, 0.2);
+}
+
+.btn-secondary,
+.btn-primary {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+}
+
+.btn-secondary {
+  background: rgba(138, 43, 226, 0.1);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(138, 43, 226, 0.2);
+  color: #fff;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #8a2be2, #d946ef);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(217, 70, 239, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(217, 70, 239, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.step-indicator {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .onboarding-card {
+    padding: 25px;
+    border-radius: 15px;
+  }
+
+  .onboarding-content h2 {
+    font-size: 22px;
+  }
+
+  .options-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .subjects-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .onboarding-controls {
+    flex-direction: column;
+  }
+
+  .btn-secondary,
+  .btn-primary {
+    width: 100%;
+  }
+
+  .step-indicator {
+    order: -1;
+    width: 100%;
+  }
+}
