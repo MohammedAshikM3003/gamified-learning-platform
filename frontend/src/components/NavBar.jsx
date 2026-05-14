@@ -6,7 +6,6 @@ import { useState, useEffect } from "react";
 import navIcon1 from '../assets/img/nav-icon1.svg';
 import navIcon2 from '../assets/img/nav-icon2.svg';
 import navIcon3 from '../assets/img/nav-icon3.svg';
-import logo from '../assets/img/logo1_transparent.png';
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "../TranslationContext"; // adjust path if needed
 
@@ -43,13 +42,19 @@ function NavBar() {
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           style={{ display: "flex", alignItems: "center", gap: "10px" }}
         >
-          <img
-            src={logo}
-            alt="Brand Logo"
-            style={{ width: "100px", height: "auto" }}
-            loading="eager"
-          />
-          <span style={{ color: "var(--text-primary)", fontWeight: "bold", fontSize: "1.2rem" }}>
+          {/* LearnCraft custom pencil icon */}
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 16 16" style={{ filter: 'drop-shadow(0 0 6px #8b5cf6)' }}>
+            <path d="M0 0h16v16H0z" fill="none" />
+            <path fill="#8b5cf6" d="m6 10l2-1l7-7l-1-1l-7 7zm-1.48 3.548c-.494-1.043-1.026-1.574-2.069-2.069l1.548-4.262l2-1.217l6-6h-3l-6 6l-3 10l10-3l6-6V4l-6 6l-1.217 2z" />
+          </svg>
+          <span style={{
+            color: "var(--text-primary)",
+            fontWeight: 800,
+            fontSize: "1.15rem",
+            letterSpacing: "0.5px",
+            fontFamily: "Poppins, sans-serif",
+          }}>
+            LearnCraft
           </span>
         </Navbar.Brand>
         <Nav.Link
