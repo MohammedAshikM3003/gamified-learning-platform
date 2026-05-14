@@ -49,10 +49,7 @@ function App() {
                 <div style={{ width: '100%', minHeight: '100vh', display: 'block', overflow: 'hidden' }}>
                   <Banner />
                 </div>
-                <div style={{ width: '100%', minHeight: '100vh', display: 'block', position: 'relative' }}>
-                  <AboutUs />
-                </div>
-                <Projects />
+                <AboutUs />
                 <Contact />
               </>
             }

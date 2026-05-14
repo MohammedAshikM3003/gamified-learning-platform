@@ -11,6 +11,31 @@ const s1MarsSurface = document.querySelector('#s-mars-surface')
 const s1MarsShadow = document.querySelector('#s-mars-shadow')
 const s1Tip = document.querySelector('.Tip')
 
+// --- Added for parent window integration ---
+let isControlledByParent = false;
+let parentContainer = null;
+if (window.parent !== window) {
+  try {
+    parentContainer = window.parent.document.getElementById('about');
+    if (parentContainer) {
+      isControlledByParent = true;
+      window.parent.addEventListener('scroll', () => {
+        const rect = parentContainer.getBoundingClientRect();
+        const maxScroll = rect.height - window.innerHeight;
+        let progress = -rect.top;
+        if (progress < 0) progress = 0;
+        if (progress > maxScroll) progress = maxScroll;
+        
+        if (scrollHeight > 0 && containerHeight > 0) {
+          scrollY = (progress / maxScroll) * (scrollHeight - containerHeight);
+          velocityY = 0;
+        }
+      });
+    }
+  } catch (e) {}
+}
+// -------------------------------------------
+
 const s3Rocket = document.querySelector('#s-launch-rocket')
 const s3RocketSide1 = document.querySelector('#s-launch-side1')
 const s3RocketSide2 = document.querySelector('#s-launch-side2')
