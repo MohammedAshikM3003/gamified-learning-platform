@@ -46,8 +46,12 @@ function App() {
             element={
               <>
                 <NavBar />
-                <Banner />
-                <AboutUs />
+                <div style={{ width: '100%', minHeight: '100vh', display: 'block', overflow: 'hidden' }}>
+                  <Banner />
+                </div>
+                <div style={{ width: '100%', minHeight: '100vh', display: 'block', position: 'relative' }}>
+                  <AboutUs />
+                </div>
                 <Projects />
                 <Contact />
               </>
@@ -55,41 +59,41 @@ function App() {
           />
           <Route path="/login" element={<><NavBar /><Login /></>} />
           <Route path="/signup" element={<><NavBar /><Signup /></>} />
-                    <Route
-                      path="/onboarding"
-                      element={
-                        <ProtectedRoute>
-                          <Onboarding />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/*"
-                      element={
-                        <ProtectedRoute requireOnboarding={true}>
-                          <DashboardLayout>
-                            <Routes>
-                              <Route path="/dashboard" element={<Dashboard />} />
-                              <Route path="/ai-tutor" element={<AITutor />} />
-                              <Route path="/quest-map" element={<QuestMap />} />
-                              <Route path="/arena" element={<BattleArena />} />
-                              <Route path="/subjects" element={<Subjects />} />
-                              <Route path="/subjects/:subjectId" element={<SubjectDetail />} />
-                              <Route path="/subjects/:subjectId/:chapterId" element={<ChapterDetail />} />
-                              <Route path="/topics/:topicId" element={<TopicPage />} />
-                              <Route path="/courses" element={<Courses />} />
-                              <Route path="/labs" element={<PracticeLabs />} />
-                              <Route path="/mocks" element={<MockTests />} />
-                              <Route path="/achievements" element={<Achievements />} />
-                              <Route path="/leaderboard" element={<Leaderboard />} />
-                              <Route path="/challenges" element={<Challenges />} />
-                              <Route path="/settings" element={<SettingsPage />} />
-                              <Route path="/analysis" element={<SkillAnalysis />} />
-                            </Routes>
-                          </DashboardLayout>
-                        </ProtectedRoute>
-                      }
-                    />
+          <Route
+            path="/onboarding"
+            element={
+              <ProtectedRoute>
+                <Onboarding />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute requireOnboarding={true}>
+                <DashboardLayout>
+                  <Routes>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/ai-tutor" element={<AITutor />} />
+                    <Route path="/quest-map" element={<QuestMap />} />
+                    <Route path="/arena" element={<BattleArena />} />
+                    <Route path="/subjects" element={<Subjects />} />
+                    <Route path="/subjects/:subjectId" element={<SubjectDetail />} />
+                    <Route path="/subjects/:subjectId/:chapterId" element={<ChapterDetail />} />
+                    <Route path="/topics/:topicId" element={<TopicPage />} />
+                    <Route path="/courses" element={<Courses />} />
+                    <Route path="/labs" element={<PracticeLabs />} />
+                    <Route path="/mocks" element={<MockTests />} />
+                    <Route path="/achievements" element={<Achievements />} />
+                    <Route path="/leaderboard" element={<Leaderboard />} />
+                    <Route path="/challenges" element={<Challenges />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/analysis" element={<SkillAnalysis />} />
+                  </Routes>
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
           <Route path="/games/6th" element={<Sixth />} />
           <Route path="/games/7th" element={<Seventh />} />
           <Route path="/games/8th" element={<Eight />} />

@@ -18,7 +18,7 @@ function NavBar() {
 
   const navLinks = [
     { name: "Home", path: "/" },
-    { name: "About", path: "/read" }, 
+    { name: "About", path: "#about" }, 
     { name: "Tools", path: "/ai-tutor" },
     { name: "Contact", path: "#contact" },
   ];
