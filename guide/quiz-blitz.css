@@ -1,0 +1,10 @@
+/* quiz-blitz/quiz-blitz.css */
+/* Styling for Quiz Blitz game mode */
+
+.quiz-blitz-hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);\n  backdrop-filter: blur(10px);\n  border-bottom: 1px solid rgba(255, 255, 255, 0.08);\n  padding: 16px 24px;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  z-index: 1000;\n  gap: 32px;\n}\n\n@media (max-width: 768px) {\n  .quiz-blitz-hud {\n    flex-direction: column;\n    height: auto;\n    gap: 12px;\n    padding: 12px 16px;\n  }\n}\n\n.quiz-blitz-question-card {\n  width: 100%;\n  max-width: 700px;\n  background: rgba(10, 10, 12, 0.85);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 20px;\n  padding: 40px;\n  backdrop-filter: blur(20px);\n  margin-top: 120px;\n}\n\n@media (max-width: 768px) {\n  .quiz-blitz-question-card {\n    padding: 24px;\n    margin-top: 160px;\n    border-radius: 16px;\n  }\n}\n\n.quiz-blitz-timer-bar {\n  height: 4px;\n  border-radius: 2px;\n  background: var(--primary);\n  transition: background-color 0.3s ease, width 0.1s linear;\n  display: block;\n}\n\n.quiz-blitz-timer-bar.danger {\n  background: var(--error);\n}\n\n.quiz-blitz-timer-bar.warning {\n  background: var(--secondary);\n}\n\n/* Responsive adjustments */\n@media (max-width: 480px) {\n  .quiz-blitz-question-card {\n    padding: 16px;\n  }\n\n  .quiz-blitz-question-card h3 {\n    font-size: 16px !important;\n  }\n\n  .quiz-blitz-hud {\n    font-size: 12px;\n  }\n}\n
