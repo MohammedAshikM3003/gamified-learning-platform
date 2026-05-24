@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Medal, Flame, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { firestoreService } from '../../services/firestoreService';
-import { useAuth } from '../../context/AuthContext';
-import { xpEngine } from '../../game-engine/xpEngine';
+import { firestoreService } from '../services/firestoreService';
+import { useAuth } from '../context/AuthContext';
+import { xpEngine } from '../game-engine/xpEngine';
 import '../pages/dashboard.css';
 
 export default function Leaderboard() {

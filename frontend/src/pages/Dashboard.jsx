@@ -17,7 +17,7 @@ export default function Dashboard() {
     profile, progression, levelInfo,
     mySubjectObjects, completedTopics,
     recommendedTopics, weakAreas,
-    battleHistory, achievements,
+    battleHistory, achievements, analytics,
     isLoaded,
   } = useProgress();
 
@@ -81,7 +81,7 @@ export default function Dashboard() {
           <div className="stat-icon-wrapper"><ClockFill className="stat-icon" /></div>
           <div className="stat-info">
             <p className="stat-label">Battles Won</p>
-            <p className="stat-value">{profile?.analytics?.totalBattlesWon || 0}</p>
+            <p className="stat-value">{analytics.totalBattlesWon || 0}</p>
           </div>
         </div>
       </div>

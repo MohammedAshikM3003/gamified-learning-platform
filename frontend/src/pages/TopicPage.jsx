@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getTopicById } from '../data/learningData';
 import BattleArena from '../games/battle-arena/BattleArena';
+import PuzzleMatchGame from '../games/puzzle-match/PuzzleMatchGame';
+import worldMap from '../data/worldMap';
 import { ChevronLeft, Swords, Star, Zap, BookOpen } from 'lucide-react';
 import './dashboard.css';
 
@@ -19,7 +21,18 @@ export default function TopicPage() {
 
   const topic = getTopicById(topicId);
 
-  if (!topic) {
+  // fallback to worldMap config when learningData doesn't include the topic
+  const fallbackTopic = !topic
+    ? worldMap
+        .flatMap((w) => w.subjects || [])
+        .flatMap((s) => s.chapters || [])
+        .flatMap((c) => c.topics || [])
+        .find((t) => t.id === topicId)
+    : null;
+
+  const resolvedTopic = topic || fallbackTopic;
+
+  if (!resolvedTopic) {
     return (
       <div className="dashboard-content" style={{ textAlign: 'center', paddingTop: '80px' }}>
         <h2>Topic not found.</h2>
@@ -30,7 +43,7 @@ export default function TopicPage() {
     );
   }
 
-  const diff = DIFFICULTY_CONFIG[topic.difficulty] || DIFFICULTY_CONFIG.medium;
+  const diff = DIFFICULTY_CONFIG[resolvedTopic.difficulty] || DIFFICULTY_CONFIG.medium;
 
   return (
     <div className="dashboard-content">
@@ -43,11 +56,11 @@ export default function TopicPage() {
           <ChevronLeft size={16} /> Back
         </button>
         <span style={{ color: 'var(--text-dim)' }}>/</span>
-        <span style={{ color: 'var(--text-dim)', fontSize: '13px' }}>{topic.subjectId}</span>
+        <span style={{ color: 'var(--text-dim)', fontSize: '13px' }}>{resolvedTopic.subjectId}</span>
         <span style={{ color: 'var(--text-dim)' }}>/</span>
-        <span style={{ color: 'var(--text-dim)', fontSize: '13px' }}>{topic.chapterId}</span>
+        <span style={{ color: 'var(--text-dim)', fontSize: '13px' }}>{resolvedTopic.chapterId}</span>
         <span style={{ color: 'var(--text-dim)' }}>/</span>
-        <span style={{ fontSize: '13px', color: 'var(--primary)' }}>{topic.title}</span>
+        <span style={{ fontSize: '13px', color: 'var(--primary)' }}>{resolvedTopic.title}</span>
       </div>
 
       {/* Topic Header */}
@@ -59,25 +72,25 @@ export default function TopicPage() {
                 {diff.label}
               </span>
               <span style={{ fontSize: '10px', padding: '4px 12px', borderRadius: '999px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.08)', letterSpacing: '1px' }}>
-                {topic.game}
+                {resolvedTopic.game}
               </span>
             </div>
-            <h1 style={{ fontSize: '28px', fontWeight: 900, margin: '0 0 8px' }}>{topic.title}</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>{topic.description}</p>
+            <h1 style={{ fontSize: '28px', fontWeight: 900, margin: '0 0 8px' }}>{resolvedTopic.title}</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>{resolvedTopic.description}</p>
           </div>
 
           <div style={{ display: 'flex', gap: '20px', flexShrink: 0 }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Star size={18} color="var(--secondary)" />
-                <span style={{ fontSize: '22px', fontWeight: 800, color: 'var(--secondary)' }}>+{topic.xp}</span>
+                <span style={{ fontSize: '22px', fontWeight: 800, color: 'var(--secondary)' }}>+{resolvedTopic.xp}</span>
               </div>
               <p style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', margin: 0 }}>XP REWARD</p>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <BookOpen size={18} color="var(--primary)" />
-                <span style={{ fontSize: '22px', fontWeight: 800, color: 'var(--primary)' }}>{topic.questions?.length || 0}</span>
+                <span style={{ fontSize: '22px', fontWeight: 800, color: 'var(--primary)' }}>{resolvedTopic.questions?.length || 0}</span>
               </div>
               <p style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', margin: 0 }}>QUESTIONS</p>
             </div>
@@ -86,7 +99,11 @@ export default function TopicPage() {
       </div>
 
       {/* Battle Arena Game */}
-      <BattleArena topic={topic} />
+      {resolvedTopic.game === 'puzzle-match' ? (
+        <PuzzleMatchGame topic={{ ...resolvedTopic, id: topicId }} />
+      ) : (
+        <BattleArena topic={resolvedTopic} />
+      )}
     </div>
   );
 }

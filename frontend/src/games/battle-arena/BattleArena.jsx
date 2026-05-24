@@ -152,7 +152,7 @@ export default function BattleArena({ topic }) {
         setAnswerLocked(false);
       }, 900);
     }
-  }, [answerLocked, combo, enemyHp, playerHp, topic, totalXp, user, userProfile]);
+  }, [answerLocked, combo, enemyHp, playerHp, topic, totalXp, userProfile]);
 
   const handleRetry = () => {
     setGamePhase('idle');

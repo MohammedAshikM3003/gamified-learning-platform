@@ -1,221 +1,300 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
+import { db } from '../firebase';
 import { firestoreService } from '../services/firestoreService';
+import * as progressService from '../services/progressService';
 import { xpEngine } from '../game-engine/xpEngine';
 import { learningData, getTopicById } from '../data/learningData';
 import { getSubjectsForGrade } from '../data/gradeSubjects';
 
 const UserProgressContext = createContext(null);
 
+function mapCollectionSnapshot(snapshot) {
+  return snapshot.docs.map((snapshotDoc) => ({ id: snapshotDoc.id, ...snapshotDoc.data() }));
+}
+
 export const UserProgressProvider = ({ children }) => {
   const { user, userProfile } = useAuth();
 
-  // ── Live-synced state from Firestore ─────────────────────
   const [profile, setProfile] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [topicDocs, setTopicDocs] = useState([]);
+  const [bossDocs, setBossDocs] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [notification, setNotification] = useState(null); // { type, message }
+  const [notification, setNotification] = useState(null);
 
-  // Subscribe to real-time Firestore updates when user logs in
   useEffect(() => {
-    if (!user?.uid) { setProfile(null); return; }
+    if (!user?.uid || !db) {
+      setProfile(null);
+      setSummary(null);
+      setTopicDocs([]);
+      setBossDocs([]);
+      return undefined;
+    }
 
-    // Seed initial profile from AuthContext (instant display)
     if (userProfile) setProfile(userProfile);
 
-    // Then subscribe for live updates
-    const unsubscribe = firestoreService.subscribeToProfile(user.uid, (liveProfile) => {
+    const unsubscribeProfile = firestoreService.subscribeToProfile(user.uid, (liveProfile) => {
       setProfile(liveProfile);
     });
 
-    return unsubscribe;
+    const summaryRef = doc(db, 'userProgress', user.uid);
+    const unsubscribeSummary = onSnapshot(summaryRef, (snapshot) => {
+      setSummary(snapshot.exists() ? snapshot.data() : null);
+    });
+
+    const topicsRef = collection(db, 'userProgress', user.uid, 'topics');
+    const unsubscribeTopics = onSnapshot(topicsRef, (snapshot) => {
+      setTopicDocs(mapCollectionSnapshot(snapshot));
+    });
+
+    const bossesRef = collection(db, 'userProgress', user.uid, 'bosses');
+    const unsubscribeBosses = onSnapshot(bossesRef, (snapshot) => {
+      setBossDocs(mapCollectionSnapshot(snapshot));
+    });
+
+    return () => {
+      unsubscribeProfile?.();
+      unsubscribeSummary?.();
+      unsubscribeTopics?.();
+      unsubscribeBosses?.();
+    };
   }, [user?.uid, userProfile]);
 
-  // ── Derived state (computed, never stored) ────────────────
-  const grade          = profile?.profile?.grade || 'grade10';
+  const grade = profile?.profile?.grade || summary?.currentGrade || 'grade10';
   const selectedSubjects = profile?.selectedSubjects || [];
-  const progression    = profile?.progression || { xp: 0, level: 1, streak: 0, coins: 0 };
-  const progress       = profile?.progress || { completedTopics: [], unlockedTopics: [], battleHistory: [] };
-  const analytics      = profile?.analytics || { weakSubjects: [], strongSubjects: [], totalBattlesWon: 0 };
-  const achievements   = profile?.achievements || [];
+  const completedTopicsCount = summary?.completedTopicsCount || 0;
+  const completedBossesCount = summary?.completedBossesCount || 0;
+  const xpTotal = summary?.xpTotal || 0;
+  const coinsTotal = summary?.coinsTotal || 0;
+  const streak = summary?.streak || 0;
+  const starsTotal = summary?.starsTotal || 0;
+  const currentWorld = summary?.currentWorld || null;
+  const currentGrade = summary?.currentGrade || grade;
+  const achievements = summary?.achievements || [];
 
-  // XP/Level breakdown
-  const levelInfo = useMemo(() => xpEngine.getLevelProgress(progression.xp), [progression.xp]);
+  const levelInfo = useMemo(() => xpEngine.getLevelProgress(xpTotal), [xpTotal]);
 
-  // My subjects (resolved with full label/color data)
   const mySubjectObjects = useMemo(() => {
     const gradeSubjects = getSubjectsForGrade(grade);
     if (selectedSubjects.length === 0) return gradeSubjects.slice(0, 3);
-    return gradeSubjects.filter(s => selectedSubjects.includes(s.id));
+    return gradeSubjects.filter((subject) => selectedSubjects.includes(subject.id));
   }, [grade, selectedSubjects]);
 
-  // Topics available for this user's grade
   const gradeTopics = useMemo(() => {
     const topics = [];
     const gradeData = learningData[grade];
     if (!gradeData) return topics;
+
     for (const [subjectId, subject] of Object.entries(gradeData.subjects || {})) {
       for (const [chapterId, chapter] of Object.entries(subject.chapters || {})) {
-        for (const topic of (chapter.topics || [])) {
+        for (const topic of chapter.topics || []) {
           topics.push({ ...topic, subjectId, chapterId });
         }
       }
     }
+
     return topics;
   }, [grade]);
 
-  // Is a topic unlocked?
+  const topicProgressById = useMemo(() => progressService.mapTopicsById(topicDocs), [topicDocs]);
+  const bossProgressById = useMemo(() => progressService.mapTopicsById(bossDocs), [bossDocs]);
+
+  const completedTopics = useMemo(
+    () => progressService.deriveCompletedTopics(topicProgressById),
+    [topicProgressById]
+  );
+
+  const completedBosses = useMemo(
+    () => Array.from(bossProgressById.entries())
+      .filter(([, boss]) => boss?.completed === true)
+      .map(([bossId]) => bossId),
+    [bossProgressById]
+  );
+
+  const battleHistory = useMemo(() => {
+    return topicDocs
+      .map((topic) => ({
+        topicId: topic.topicId || topic.id,
+        xpGained: topic.xpEarned || 0,
+        score: topic.score || 0,
+        won: topic.completed === true,
+        playedAt: topic.playedAt || null,
+      }))
+      .reverse();
+  }, [topicDocs]);
+
   const isTopicUnlocked = useCallback((topicId) => {
     if (!topicId) return false;
     const topic = getTopicById(topicId);
-    if (!topic?.unlockRequirement) return true; // No requirement = always unlocked
-    return progress.completedTopics.includes(topic.unlockRequirement);
-  }, [progress.completedTopics]);
+    if (!topic) return false;
+    if (!topic.unlockRequirement) return true;
 
-  // Is a topic completed?
+    const prerequisite = topicProgressById.get(topic.unlockRequirement);
+    return prerequisite?.completed === true || progressService.computeBestScore(prerequisite?.bestScore, prerequisite?.score) >= 60;
+  }, [topicProgressById]);
+
   const isTopicCompleted = useCallback((topicId) => {
-    return progress.completedTopics.includes(topicId);
-  }, [progress.completedTopics]);
+    if (!topicId) return false;
+    return topicProgressById.get(topicId)?.completed === true;
+  }, [topicProgressById]);
 
-  // Recommended next topics (not completed, unlocked)
   const recommendedTopics = useMemo(() => {
     return gradeTopics
-      .filter(t => isTopicUnlocked(t.id) && !isTopicCompleted(t.id))
-      .filter(t => selectedSubjects.length === 0 || selectedSubjects.includes(t.subjectId))
+      .filter((topic) => isTopicUnlocked(topic.id) && !isTopicCompleted(topic.id))
+      .filter((topic) => selectedSubjects.length === 0 || selectedSubjects.includes(topic.subjectId))
       .slice(0, 5);
   }, [gradeTopics, isTopicUnlocked, isTopicCompleted, selectedSubjects]);
 
-  // Weak areas (subjects with most losses)
-  const weakAreas = useMemo(() => {
-    const lossMap = {};
-    for (const battle of (progress.battleHistory || [])) {
-      if (!battle.won) {
-        const topic = getTopicById(battle.topicId);
-        if (topic?.subjectId) {
-          lossMap[topic.subjectId] = (lossMap[topic.subjectId] || 0) + 1;
-        }
-      }
-    }
-    return Object.entries(lossMap)
-      .sort((a, b) => b[1] - a[1])
-      .map(([subjectId]) => subjectId);
-  }, [progress.battleHistory]);
+  const weakAreas = useMemo(
+    () => progressService.deriveWeakAreas(topicProgressById),
+    [topicProgressById]
+  );
 
-  // ── Actions ───────────────────────────────────────────────
+  const progress = useMemo(() => ({
+    ...summary,
+    xpTotal,
+    coinsTotal,
+    level: summary?.level || levelInfo.level,
+    streak,
+    starsTotal,
+    completedTopics,
+    completedBosses,
+    completedTopicsCount,
+    completedBossesCount,
+    currentGrade,
+    currentWorld
+  }), [summary, xpTotal, coinsTotal, streak, starsTotal, completedTopics, completedBosses, completedTopicsCount, completedBossesCount, currentGrade, currentWorld, levelInfo.level]);
 
-  /** Call this when a battle ends (win or lose) */
-  const completeBattle = useCallback(async ({ topicId, xpGained, comboMax, won }) => {
-    if (!user?.uid) return;
-    setSaving(true);
-    try {
-      const currentXp   = progression.xp + (won ? xpGained : Math.floor(xpGained * 0.2));
-      const newLevel    = xpEngine.calculateLevel(currentXp);
-      const leveledUp   = newLevel > progression.level;
+  const showNotification = useCallback((type, message) => {
+    setNotification({ type, message });
+    window.setTimeout(() => setNotification(null), 4000);
+  }, []);
 
-      await firestoreService.completeBattle(user.uid, {
-        topicId, xpGained: won ? xpGained : Math.floor(xpGained * 0.2),
-        newXp: currentXp, newLevel, comboMax, won,
-      });
-
-      // Unlock next topic if requirements are met
-      const nextTopics = gradeTopics.filter(t => t.unlockRequirement === topicId);
-      for (const next of nextTopics) {
-        await firestoreService.unlockTopic(user.uid, next.id);
-      }
-
-      // Show notification
-      if (won) {
-        showNotification('victory', leveledUp
-          ? `⚡ Level Up! You are now Level ${newLevel}!`
-          : `🏆 Victory! +${xpGained} XP earned`
-        );
-      }
-
-      // Check achievements
-      await checkAndGrantAchievements({ topicId, comboMax, won, totalBattlesWon: (analytics.totalBattlesWon || 0) + (won ? 1 : 0) });
-
-    } catch (err) {
-      console.error('completeBattle error:', err);
-    } finally {
-      setSaving(false);
-    }
-  }, [user?.uid, progression, gradeTopics, analytics.totalBattlesWon]);
-
-  /** Update streak (call on daily login) */
-  const updateStreak = useCallback(async (newStreak) => {
-    if (!user?.uid) return;
-    await firestoreService.updateStreak(user.uid, newStreak);
-  }, [user?.uid]);
-
-  // ── Achievement Engine ────────────────────────────────────
-  const checkAndGrantAchievements = useCallback(async ({ topicId, comboMax, won, totalBattlesWon }) => {
+  const checkAndGrantAchievements = useCallback(async ({ comboMax, won, totalBattlesWon }) => {
     if (!user?.uid || !won) return;
-    const earned = achievements.map(a => a.id);
-
+    const earned = new Set(achievements.map((achievement) => achievement.id));
     const toGrant = [];
 
-    if (totalBattlesWon === 1 && !earned.includes('first-victory'))
+    if (totalBattlesWon === 1 && !earned.has('first-victory')) {
       toGrant.push({ id: 'first-victory', name: 'First Blood', icon: '⚔️', rarity: 'common' });
+    }
 
-    if (comboMax >= 5 && !earned.includes('combo-5'))
+    if (comboMax >= 5 && !earned.has('combo-5')) {
       toGrant.push({ id: 'combo-5', name: 'Combo Master', icon: '🔥', rarity: 'rare' });
+    }
 
-    if (comboMax >= 10 && !earned.includes('combo-10'))
+    if (comboMax >= 10 && !earned.has('combo-10')) {
       toGrant.push({ id: 'combo-10', name: 'Untouchable', icon: '⚡', rarity: 'epic' });
+    }
 
-    if (totalBattlesWon >= 10 && !earned.includes('ten-wins'))
+    if (totalBattlesWon >= 10 && !earned.has('ten-wins')) {
       toGrant.push({ id: 'ten-wins', name: 'Veteran', icon: '🏆', rarity: 'rare' });
+    }
 
-    if (totalBattlesWon >= 50 && !earned.includes('fifty-wins'))
+    if (totalBattlesWon >= 50 && !earned.has('fifty-wins')) {
       toGrant.push({ id: 'fifty-wins', name: 'Legend', icon: '👑', rarity: 'legendary' });
+    }
 
     for (const achievement of toGrant) {
       await firestoreService.grantAchievement(user.uid, achievement);
       showNotification('achievement', `🏅 Achievement Unlocked: ${achievement.name}`);
     }
-  }, [user?.uid, achievements]);
+  }, [user?.uid, achievements, showNotification]);
 
-  // ── Notification helpers ──────────────────────────────────
-  const showNotification = (type, message) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 4000);
-  };
+  const completeBattle = useCallback(async ({ topicId, xpGained = 0, comboMax = 0, won = false }) => {
+    if (!user?.uid) return;
+    setSaving(true);
 
-  // ── Context value ─────────────────────────────────────────
+    try {
+      const topic = topicId ? getTopicById(topicId) : null;
+      const earnedXp = won ? xpGained : Math.floor(xpGained * 0.2);
+      const stars = won ? 3 : 0;
+      const currentLevel = summary?.level || levelInfo.level;
+      const predictedLevel = xpEngine.calculateLevel(xpTotal + earnedXp);
+      const leveledUp = predictedLevel > currentLevel;
+
+      const latestProgress = await progressService.saveGameResult(user.uid, {
+        topicId,
+        gradeId: topic?.gradeId || topic?.grade || grade,
+        subjectId: topic?.subjectId || null,
+        chapterId: topic?.chapterId || null,
+        xpEarned: earnedXp,
+        score: won ? 100 : 0,
+        stars,
+        gameType: 'battle-arena',
+        completed: won,
+        passScore: 60
+      });
+
+      if (won) {
+        showNotification('victory', leveledUp
+          ? `⚡ Level Up! You are now Level ${predictedLevel}!`
+          : `🏆 Victory! +${earnedXp} XP earned`
+        );
+      }
+
+      await checkAndGrantAchievements({
+        comboMax,
+        won,
+        totalBattlesWon: latestProgress?.completedTopicsCount || completedTopicsCount + (won ? 1 : 0)
+      });
+    } catch (error) {
+      console.error('completeBattle error:', error);
+    } finally {
+      setSaving(false);
+    }
+  }, [user?.uid, grade, summary?.level, levelInfo.level, xpTotal, completedTopicsCount, checkAndGrantAchievements, showNotification]);
+
+  const updateStreak = useCallback(async (newStreak) => {
+    if (!user?.uid) return;
+    await firestoreService.updateStreak(user.uid, newStreak);
+  }, [user?.uid]);
+
+  const analytics = useMemo(() => ({
+    totalBattlesWon: completedTopicsCount,
+    totalBattlesPlayed: topicDocs.length,
+    totalLessonsCompleted: completedTopicsCount,
+    totalBossesCompleted: completedBossesCount
+  }), [completedTopicsCount, completedBossesCount, topicDocs.length]);
+
   const value = {
-    // Profile
     profile,
+    summary,
     grade,
+    currentGrade,
+    currentWorld,
     selectedSubjects,
     mySubjectObjects,
-
-    // Progression
-    progression,
+    progression: {
+      xp: xpTotal,
+      level: summary?.level || levelInfo.level,
+      streak,
+      coins: coinsTotal,
+      stars: starsTotal,
+      currentGrade,
+      currentWorld,
+    },
     levelInfo,
     achievements,
     analytics,
-
-    // Progress tracking
     progress,
-    completedTopics: progress.completedTopics,
-    battleHistory: progress.battleHistory,
+    completedTopics,
+    completedBosses,
+    battleHistory,
+    topicProgressById,
+    bossProgressById,
     recommendedTopics,
     weakAreas,
-
-    // Helpers
     isTopicUnlocked,
     isTopicCompleted,
-
-    // Actions
     completeBattle,
     updateStreak,
-
-    // UI state
     saving,
     notification,
     showNotification,
-
-    // Computed
-    isLoaded: !!profile,
+    isLoaded: !!profile || !!summary
   };
 
   return (

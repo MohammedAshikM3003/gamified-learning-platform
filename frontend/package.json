@@ -9,6 +9,7 @@
     "lint:fix": "eslint . --fix",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:rules": "node ./node_modules/firebase-tools/lib/bin/firebase.js --config ../firebase.json emulators:exec --project demo-gamified-learning --only firestore \"node --test ../tests/firestore.rules.test.mjs\"",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -34,6 +35,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
+    "@firebase/rules-unit-testing": "^3.0.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.0.1",
     "@testing-library/user-event": "^14.5.2",
@@ -41,6 +43,7 @@
     "eslint": "^9.8.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.10",
+    "firebase-tools": "^14.27.0",
     "globals": "^15.9.0",
     "jsdom": "^24.1.1",
     "vite": "^5.4.19",

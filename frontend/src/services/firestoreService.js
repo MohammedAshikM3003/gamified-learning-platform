@@ -1,9 +1,10 @@
 import {
   getFirestore, doc, setDoc, getDoc, updateDoc,
-  arrayUnion, increment, onSnapshot, serverTimestamp,
+  onSnapshot, serverTimestamp,
   collection, query, orderBy, limit, getDocs
 } from 'firebase/firestore';
 import { app } from '../firebase.js';
+import * as progressService from './progressService';
 
 const db = getFirestore(app);
 
@@ -19,21 +20,6 @@ export const firestoreService = {
         onboardingCompleted: false,
         selectedSubjects: [],
         profile: { grade: '', difficulty: '', learningGoals: [] },
-        progression: { level: 1, xp: 0, streak: 0, coins: 0, rank: 'Bronze' },
-        progress: {
-          completedTopics: [],
-          completedChapters: [],
-          unlockedTopics: [],
-          battleHistory: [],
-        },
-        analytics: {
-          weakSubjects: [],
-          strongSubjects: [],
-          totalBattlesWon: 0,
-          totalBattlesPlayed: 0,
-          totalLessonsCompleted: 0,
-        },
-        achievements: [],
       });
     } catch (error) {
       console.error('Error creating user profile:', error);
@@ -93,8 +79,16 @@ export const firestoreService = {
   // ── XP & Progression ─────────────────────────────────────
   updateUserStats: async (uid, newProgression) => {
     try {
-      const userRef = doc(db, 'users', uid);
-      await setDoc(userRef, { progression: newProgression }, { merge: true });
+      // Persist high-level progression into canonical `userProgress` document
+      await progressService.initializeUserProgress(uid);
+      const progressRef = doc(db, 'userProgress', uid);
+      await setDoc(progressRef, {
+        xpTotal: newProgression.xpTotal ?? newProgression.xp ?? 0,
+        coinsTotal: newProgression.coinsTotal ?? newProgression.coins ?? 0,
+        level: newProgression.level ?? 1,
+        streak: newProgression.streak ?? 0,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
     } catch (error) {
       console.error('Error updating user stats:', error);
       throw error;
@@ -108,27 +102,14 @@ export const firestoreService = {
    */
   completeBattle: async (uid, { topicId, xpGained, newXp, newLevel, comboMax, won }) => {
     try {
-      const userRef = doc(db, 'users', uid);
-      const battleEntry = {
+      // Write topic-level result and increment canonical XP totals
+      await progressService.saveGameResult(uid, {
         topicId,
-        xpGained,
-        comboMax,
-        won,
-        playedAt: new Date().toISOString(),
-      };
-
-      await setDoc(userRef, {
-        progression: { xp: newXp, level: newLevel },
-        progress: {
-          completedTopics: arrayUnion(topicId),
-          battleHistory: arrayUnion(battleEntry),
-        },
-        analytics: {
-          totalBattlesPlayed: increment(1),
-          ...(won ? { totalBattlesWon: increment(1) } : {}),
-          totalLessonsCompleted: increment(won ? 1 : 0),
-        },
-      }, { merge: true });
+        xpEarned: xpGained,
+        score: won ? 100 : 0,
+        stars: won ? 3 : 0,
+        gameType: 'battle',
+      });
     } catch (error) {
       console.error('Error saving battle result:', error);
       throw error;
@@ -138,10 +119,9 @@ export const firestoreService = {
   // ── Topic unlock ─────────────────────────────────────────
   unlockTopic: async (uid, topicId) => {
     try {
-      const userRef = doc(db, 'users', uid);
-      await setDoc(userRef, {
-        progress: { unlockedTopics: arrayUnion(topicId) },
-      }, { merge: true });
+      // Topic unlocking is derived from curriculum prerequisites and completed topics.
+      // This helper is retained for backwards compatibility but no longer mutates progress.
+      return { uid, topicId, skipped: true };
     } catch (error) {
       console.error('Error unlocking topic:', error);
       throw error;
@@ -151,11 +131,9 @@ export const firestoreService = {
   // ── Streak update ─────────────────────────────────────────
   updateStreak: async (uid, streak) => {
     try {
-      const userRef = doc(db, 'users', uid);
-      await setDoc(userRef, {
-        progression: { streak },
-        lastActiveAt: serverTimestamp(),
-      }, { merge: true });
+      // persist streak in canonical userProgress doc
+      const progressRef = doc(db, 'userProgress', uid);
+      await setDoc(progressRef, { streak, lastActiveAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
     } catch (error) {
       console.error('Error updating streak:', error);
       throw error;
@@ -165,9 +143,11 @@ export const firestoreService = {
   // ── Achievement grant ────────────────────────────────────
   grantAchievement: async (uid, achievement) => {
     try {
-      const userRef = doc(db, 'users', uid);
-      await setDoc(userRef, {
+      // add achievement into canonical userProgress achievements array
+      const progressRef = doc(db, 'userProgress', uid);
+      await setDoc(progressRef, {
         achievements: arrayUnion({ ...achievement, earnedAt: new Date().toISOString() }),
+        updatedAt: serverTimestamp(),
       }, { merge: true });
     } catch (error) {
       console.error('Error granting achievement:', error);
@@ -177,19 +157,19 @@ export const firestoreService = {
   // ── Leaderboard ──────────────────────────────────────────
   getTopUsers: async (limitCount = 50) => {
     try {
-      const usersRef = collection(db, 'users');
-      // Order by XP descending
-      const q = query(usersRef, orderBy('progression.xp', 'desc'), limit(limitCount));
+      // Query canonical `userProgress` documents for leaderboard
+      const usersRef = collection(db, 'userProgress');
+      const q = query(usersRef, orderBy('xpTotal', 'desc'), limit(limitCount));
       const querySnapshot = await getDocs(q);
       const topUsers = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
         topUsers.push({
-          id: doc.id,
+          id: docSnap.id,
           name: data.fullName || 'Anonymous',
-          xp: data.progression?.xp || 0,
-          level: data.progression?.level || 1,
-          streak: data.progression?.streak || 0,
+          xp: data.xpTotal || 0,
+          level: data.level || 1,
+          streak: data.streak || 0,
         });
       });
       return topUsers;

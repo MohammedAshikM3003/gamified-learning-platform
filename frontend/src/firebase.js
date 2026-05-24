@@ -1,6 +1,7 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -9,31 +10,28 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-const requiredKeys = [
-  "apiKey",
-  "authDomain",
-  "projectId",
-  "appId",
-];
-
-const hasRequiredConfig = requiredKeys.every((key) => Boolean(firebaseConfig[key]));
+const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'appId'];
+const hasRequiredConfig = requiredKeys.every((k) => Boolean(firebaseConfig[k]));
 
 if (!hasRequiredConfig) {
-  console.warn(
-    "Firebase config is missing required environment variables. Check frontend/.env."
-  );
+  console.warn('Firebase config missing required environment variables.');
 }
 
-const app = hasRequiredConfig ? initializeApp(firebaseConfig) : null;
+const app = hasRequiredConfig ? (getApps()[0] || initializeApp(firebaseConfig)) : null;
 
-let analytics;
-if (app && typeof window !== "undefined" && firebaseConfig.measurementId) {
-  analytics = getAnalytics(app);
+let analytics = null;
+if (app && typeof window !== 'undefined' && firebaseConfig.measurementId) {
+  try {
+    analytics = getAnalytics(app);
+  } catch (e) {
+    // ignore analytics init failures in non-browser contexts
+  }
 }
 
-const auth = app ? getAuth(app) : null;
-
-export { app, analytics, auth };
+export const auth = app ? getAuth(app) : null;
+export const db = app ? getFirestore(app) : null;
+export { app, analytics };
+export default app;

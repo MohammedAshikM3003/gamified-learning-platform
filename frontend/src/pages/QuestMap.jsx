@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { Map, Lock, Unlock, Crosshair, Skull, BookFill } from 'lucide-react';
+import { Map, Lock, Unlock, Crosshair, Skull, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useProgress } from '../../context/UserProgressContext';
-import { getChaptersBySubject } from '../../data/learningData';
+import { useProgress } from '../context/UserProgressContext';
+import { getChaptersBySubject } from '../data/learningData';
 import '../pages/dashboard.css';
 
 export default function QuestMap() {
@@ -99,7 +99,7 @@ export default function QuestMap() {
                   ) : world.status === 'completed' ? (
                     <Unlock color="white" />
                   ) : (
-                    <BookFill color="white" />
+                    <BookOpen color="white" />
                   )}
                   
                   {world.status === 'active' && (

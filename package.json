@@ -6,6 +6,7 @@
     "dev": "concurrently -n frontend,backend -c green,cyan \"node ./frontend/node_modules/vite/bin/vite.js --config ./frontend/vite.config.js --root ./frontend\" \"node ./backend/node_modules/nodemon/bin/nodemon.js ./backend/server.js\"",
     "dev:frontend": "node ./frontend/node_modules/vite/bin/vite.js --config ./frontend/vite.config.js --root ./frontend",
     "dev:backend": "node ./backend/node_modules/nodemon/bin/nodemon.js ./backend/server.js",
+    "test:rules": "npm --prefix frontend run test:rules",
     "prepare": "husky install",
     "lint": "npm --prefix frontend run lint && npm --prefix backend run lint",
     "format": "prettier --write .",
