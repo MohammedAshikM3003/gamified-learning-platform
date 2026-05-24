@@ -28,3 +28,4 @@ frontend/.env
 *.njsproj
 *.sln
 *.sw?
+migration-runner.json
