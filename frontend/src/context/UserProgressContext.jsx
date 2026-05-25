@@ -20,6 +20,7 @@ export const UserProgressProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [summary, setSummary] = useState(null);
   const [topicDocs, setTopicDocs] = useState([]);
+  const [questDocs, setQuestDocs] = useState([]);
   const [bossDocs, setBossDocs] = useState([]);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -49,6 +50,11 @@ export const UserProgressProvider = ({ children }) => {
       setTopicDocs(mapCollectionSnapshot(snapshot));
     });
 
+    const questsRef = collection(db, 'userProgress', user.uid, 'quests');
+    const unsubscribeQuests = onSnapshot(questsRef, (snapshot) => {
+      setQuestDocs(mapCollectionSnapshot(snapshot));
+    });
+
     const bossesRef = collection(db, 'userProgress', user.uid, 'bosses');
     const unsubscribeBosses = onSnapshot(bossesRef, (snapshot) => {
       setBossDocs(mapCollectionSnapshot(snapshot));
@@ -58,6 +64,7 @@ export const UserProgressProvider = ({ children }) => {
       unsubscribeProfile?.();
       unsubscribeSummary?.();
       unsubscribeTopics?.();
+      unsubscribeQuests?.();
       unsubscribeBosses?.();
     };
   }, [user?.uid, userProfile]);
@@ -100,6 +107,7 @@ export const UserProgressProvider = ({ children }) => {
 
   const topicProgressById = useMemo(() => progressService.mapTopicsById(topicDocs), [topicDocs]);
   const bossProgressById = useMemo(() => progressService.mapTopicsById(bossDocs), [bossDocs]);
+  const questProgressById = useMemo(() => progressService.mapTopicsById(questDocs), [questDocs]);
 
   const completedTopics = useMemo(
     () => progressService.deriveCompletedTopics(topicProgressById),
@@ -151,6 +159,50 @@ export const UserProgressProvider = ({ children }) => {
     () => progressService.deriveWeakAreas(topicProgressById),
     [topicProgressById]
   );
+
+  const isQuestNodeUnlocked = useCallback((nodeId, nodeMeta = {}) => {
+    if (!nodeId) return false;
+    const nodeProgress = questProgressById.get(nodeId);
+    if (nodeProgress?.completed === true) return true;
+
+    // If node has an unlock requirement referencing a topic, check topic progress
+    const requirement = nodeMeta?.unlockRequirement || null;
+    if (!requirement) return true;
+
+    const prereqTopic = topicProgressById.get(requirement);
+    return prereqTopic?.completed === true;
+  }, [questProgressById, topicProgressById]);
+
+  const startQuestNode = useCallback(async (nodeId) => {
+    if (!user?.uid || !nodeId) return null;
+    try {
+      setSaving(true);
+      const res = await progressService.saveQuestNodeProgress(user.uid, nodeId, { status: 'in-progress', startedAt: null });
+      return res;
+    } catch (err) {
+      console.error('startQuestNode error', err);
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  }, [user?.uid]);
+
+  const completeQuestNode = useCallback(async (nodeId, opts = {}) => {
+    if (!user?.uid || !nodeId) return null;
+    try {
+      setSaving(true);
+      const res = await progressService.saveQuestNodeProgress(user.uid, nodeId, { status: 'completed', completed: true, xpEarned: opts.xp || 0, meta: opts.meta || null });
+      if (opts.xp) {
+        await progressService.incrementXP(user.uid, opts.xp);
+      }
+      return res;
+    } catch (err) {
+      console.error('completeQuestNode error', err);
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  }, [user?.uid]);
 
   const progress = useMemo(() => ({
     ...summary,
@@ -285,10 +337,14 @@ export const UserProgressProvider = ({ children }) => {
     battleHistory,
     topicProgressById,
     bossProgressById,
+    questProgressById,
     recommendedTopics,
     weakAreas,
     isTopicUnlocked,
     isTopicCompleted,
+    isQuestNodeUnlocked,
+    startQuestNode,
+    completeQuestNode,
     completeBattle,
     updateStreak,
     saving,

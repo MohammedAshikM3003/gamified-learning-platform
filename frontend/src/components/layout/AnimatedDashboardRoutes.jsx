@@ -19,6 +19,9 @@ import SkillAnalysis from '../../pages/SkillAnalysis.jsx';
 import SubjectDetail from '../../pages/SubjectDetail.jsx';
 import ChapterDetail from '../../pages/ChapterDetail.jsx';
 import TopicPage from '../../pages/TopicPage.jsx';
+import TopicVideoPage from '../../pages/TopicVideoPage.jsx';
+import FractionGame from '../../pages/FractionGame.jsx';
+import MixedNumberGames from '../../pages/MixedNumberGames.jsx';
 import WorldPage from '../../pages/WorldPage.jsx';
 import GradeDetailPage from '../../pages/GradeDetailPage.jsx';
 import SubjectPage from '../../pages/SubjectPage.jsx';
@@ -37,7 +40,10 @@ export default function AnimatedDashboardRoutes() {
         <Route path="/subjects" element={<PageTransition><Subjects /></PageTransition>} />
         <Route path="/subjects/:subjectId" element={<PageTransition><SubjectDetail /></PageTransition>} />
         <Route path="/subjects/:subjectId/:chapterId" element={<PageTransition><ChapterDetail /></PageTransition>} />
-        <Route path="/topics/:topicId" element={<PageTransition><TopicPage /></PageTransition>} />
+        <Route path="/topics/:topicId" element={<PageTransition><TopicVideoPage /></PageTransition>} />
+        <Route path="/games/fraction" element={<PageTransition><FractionGame /></PageTransition>} />
+        <Route path="/games/mixed-numbers" element={<PageTransition><MixedNumberGames /></PageTransition>} />
+        <Route path="/games/fractiongame.html" element={<PageTransition><FractionGame /></PageTransition>} />
         <Route path="/worlds" element={<PageTransition><WorldPage /></PageTransition>} />
         <Route path="/worlds/:gradeId" element={<PageTransition><GradeDetailPage /></PageTransition>} />
         <Route path="/worlds/:gradeId/:subjectId" element={<PageTransition><SubjectPage /></PageTransition>} />

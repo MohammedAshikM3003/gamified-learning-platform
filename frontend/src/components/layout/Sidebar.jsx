@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
   Cpu, 
@@ -59,7 +58,7 @@ const NAV_GROUPS = [
   }
 ];
 
-export const Sidebar = () => {
+export const Sidebar = ({ isMobileOpen = false, onMobileClose = () => {} }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
   const { user, userProfile } = useAuth();
@@ -71,11 +70,9 @@ export const Sidebar = () => {
   const progressPercentage = xpEngine.getLevelProgress(xp).progressPercentage;
 
   return (
-    <motion.aside 
-      className="os-sidebar"
-      initial={false}
-      animate={{ width: isCollapsed ? 90 : 280 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    <aside 
+      className={`os-sidebar ${isMobileOpen ? 'is-mobile-open' : ''}`}
+      style={{ width: isCollapsed ? 90 : 280 }}
     >
       {/* Header */}
       <div className="sidebar-header">
@@ -86,23 +83,16 @@ export const Sidebar = () => {
               <path fill="currentColor" d="m6 10l2-1l7-7l-1-1l-7 7zm-1.48 3.548c-.494-1.043-1.026-1.574-2.069-2.069l1.548-4.262l2-1.217l6-6h-3l-6 6l-3 10l10-3l6-6V4l-6 6l-1.217 2z" />
             </svg>
           </div>
-          <AnimatePresence>
-            {!isCollapsed && (
-              <motion.span 
-                className="brand-text"
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                LEARNCRAFT OS
-              </motion.span>
-            )}
-          </AnimatePresence>
+          {!isCollapsed && (
+            <span className="brand-text">
+              LEARNCRAFT OS
+            </span>
+          )}
         </div>
         <button 
           className="btn-toggle" 
           onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
@@ -112,18 +102,11 @@ export const Sidebar = () => {
       <nav className="sidebar-nav">
         {NAV_GROUPS.map((group, groupIndex) => (
           <div key={groupIndex} className="nav-group">
-            <AnimatePresence>
-              {!isCollapsed && (
-                <motion.div 
-                  className="nav-group-label"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0, height: 0 }}
-                >
-                  {group.label}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {!isCollapsed && (
+              <div className="nav-group-label">
+                {group.label}
+              </div>
+            )}
             
             {group.items.map((item) => {
               const isActive = location.pathname === item.path || (item.path === '/dashboard' && location.pathname === '/');
@@ -134,21 +117,15 @@ export const Sidebar = () => {
                   key={item.id} 
                   to={item.path} 
                   className={`nav-item ${isActive ? 'active' : ''}`}
+                  onClick={onMobileClose}
                 >
                   <div className="nav-item-content">
                     <Icon size={20} className="nav-icon" />
-                    <AnimatePresence>
-                      {!isCollapsed && (
-                        <motion.span 
-                          className="nav-item-text"
-                          initial={{ opacity: 0, width: 0 }}
-                          animate={{ opacity: 1, width: "auto" }}
-                          exit={{ opacity: 0, width: 0 }}
-                        >
-                          {item.label}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
+                    {!isCollapsed && (
+                      <span className="nav-item-text">
+                        {item.label}
+                      </span>
+                    )}
                   </div>
                   
                   {!isCollapsed && item.pip && (
@@ -177,27 +154,20 @@ export const Sidebar = () => {
             <User size={20} color="var(--text-secondary)" />
             <div className="online-indicator"></div>
           </div>
-          <AnimatePresence>
-            {!isCollapsed && (
-              <motion.div 
-                className="profile-info"
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-              >
-                <p className="profile-name">{user?.displayName || 'Learner'}</p>
-                <p className="profile-level">Tier {level} • {xp} XP</p>
-                <div className="footer-progress-bar">
-                  <div 
-                    className="footer-progress-fill" 
-                    style={{ width: `${progressPercentage}%` }}
-                  ></div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {!isCollapsed && (
+            <div className="profile-info">
+              <p className="profile-name">{user?.displayName || 'Learner'}</p>
+              <p className="profile-level">Tier {level} • {xp} XP</p>
+              <div className="footer-progress-bar">
+                <div 
+                  className="footer-progress-fill" 
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-    </motion.aside>
+    </aside>
   );
 };

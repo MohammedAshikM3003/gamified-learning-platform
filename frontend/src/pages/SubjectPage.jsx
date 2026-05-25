@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import worldMap from '../data/worldMap';
 import BossGate from '../components/world/BossGate';
+import { getTopicById } from '../data/learningData';
 
 export default function SubjectPage() {
   const { gradeId, subjectId } = useParams();
@@ -30,9 +31,24 @@ export default function SubjectPage() {
                   <h4>{ch.regionName}</h4>
                   <div>
                     {ch.topics?.map((t) => (
-                      <Link key={t.id} to={`/topics/${t.id}`} style={{ marginRight: 8 }}>
+                      <button
+                        key={t.id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const resolvedTopic = getTopicById(t.id);
+                          const videoPath = resolvedTopic?.videoPath || '/videos/fractions_intro.mp4';
+                          // If the global inline video helper exists, use it to play video inline
+                          if (window.LearnCraftOpenInlineVideo) {
+                            window.LearnCraftOpenInlineVideo(videoPath, `/topics/${t.id}`, e.currentTarget);
+                          } else {
+                            // fallback to navigation
+                            navigate(`/topics/${t.id}`);
+                          }
+                        }}
+                        style={{ marginRight: 8, background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: 0 }}
+                      >
                         {t.dungeonName}
-                      </Link>
+                      </button>
                     ))}
                   </div>
                 </div>

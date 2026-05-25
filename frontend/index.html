@@ -10,5 +10,259 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('[LearnCraft] inline video helper initialising');
+        const defaultVideoPath = '/videos/fractions_intro.mp4';
+
+          // inject styles for brighter Continue button and header spacing
+          if (!document.getElementById('lc-embed-styles')) {
+            const style = document.createElement('style');
+            style.id = 'lc-embed-styles';
+            style.innerHTML = `
+              @keyframes lc-pulse { 0% { transform: translateY(0) scale(1); box-shadow: 0 6px 16px rgba(255,176,32,0.18);} 50% { transform: translateY(-3px) scale(1.03); box-shadow: 0 12px 28px rgba(255,176,32,0.28);} 100% { transform: translateY(0) scale(1); box-shadow: 0 6px 16px rgba(255,176,32,0.18);} }
+              .lc-continue-bright { background: linear-gradient(90deg,#ffb84d,#ff9900); color: #1b1b1b !important; box-shadow: 0 10px 30px rgba(255,153,0,0.28); }
+              .lc-continue-pulse { animation: lc-pulse 1.5s ease-in-out infinite; }
+              #lc-embed-header { color: #ffffff; margin-bottom: 8px; }
+            `;
+            document.head.appendChild(style);
+          }
+
+        function createOverlayContainer() {
+          let container = document.getElementById('learncraft-inline-video');
+          if (!container) {
+            container = document.createElement('div');
+            container.id = 'learncraft-inline-video';
+            Object.assign(container.style, {
+              position: 'fixed', left: 0, top: 0, right: 0, bottom: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 99999, pointerEvents: 'none'
+            });
+            document.body.appendChild(container);
+          }
+          return container;
+        }
+
+        // Insert a non-fixed video element into a sensible content container on the current page
+        function insertEmbeddedVideo(videoUrl, redirectTarget, originBtn) {
+          try {
+            console.log('[LearnCraft] insertEmbeddedVideo', videoUrl, redirectTarget);
+            // pick possible insertion points in order of likelihood
+            const selectors = ['.topic-main', '.topic-content', '.page-content', '.content', '#content', 'main', '.learncraft-page', '#root'];
+            let container = null;
+            for (const s of selectors) {
+              const el = document.querySelector(s);
+              if (el) { container = el; break; }
+            }
+            if (!container) container = document.body;
+
+            // remove any previous embedded player
+            const old = document.getElementById('learncraft-inline-video-embedded');
+            if (old) old.remove();
+
+            const wrapper = document.createElement('div');
+            wrapper.id = 'learncraft-inline-video-embedded';
+            wrapper.style.maxWidth = '920px';
+            wrapper.style.margin = '24px auto';
+            wrapper.style.borderRadius = '12px';
+            wrapper.style.overflow = 'hidden';
+            wrapper.style.boxShadow = '0 8px 20px rgba(0,0,0,0.12)';
+            wrapper.style.background = 'transparent';
+            wrapper.style.display = 'flex';
+            wrapper.style.flexDirection = 'column';
+            wrapper.style.alignItems = 'center';
+
+            // build breadcrumb and title similar to the topic page layout
+            function humanizeSegment(s) {
+              return s.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            }
+
+            let breadcrumbText = '';
+            const bc = document.querySelector('.breadcrumbs, .breadcrumb, nav[aria-label="breadcrumb"]');
+            if (bc) {
+              breadcrumbText = bc.innerText || '';
+            } else {
+              const parts = (location.pathname || '').split('/').filter(Boolean);
+              // prefer showing subject + topic when available
+              if (parts.length >= 3 && (parts[0] === 'subjects' || parts[0] === 'topics')) {
+                // subjects/mathematics/fractions  -> Mathematics / Fractions
+                breadcrumbText = humanizeSegment(parts[1]) + ' / ' + humanizeSegment(parts[2]);
+              } else if (parts.length >= 2) {
+                breadcrumbText = humanizeSegment(parts[parts.length - 2]) + ' / ' + humanizeSegment(parts[parts.length - 1]);
+              } else {
+                breadcrumbText = location.pathname || '';
+              }
+            }
+
+            // If the origin button provided a topic title (e.g., 'Understanding Fractions'), append it
+            if (originBtn && originBtn.dataset && originBtn.dataset.__lcTitle) {
+              breadcrumbText = breadcrumbText ? breadcrumbText + ' / ' + originBtn.dataset.__lcTitle : originBtn.dataset.__lcTitle;
+            }
+
+            let pageTitle = '';
+            const firstHeader = container.querySelector && (container.querySelector('h1') || container.querySelector('h2') || container.querySelector('h3'));
+            if (originBtn && originBtn.dataset && originBtn.dataset.__lcTitle) pageTitle = originBtn.dataset.__lcTitle;
+            else if (firstHeader && firstHeader.innerText && firstHeader.innerText.trim()) pageTitle = firstHeader.innerText.trim();
+            else {
+              const parts = (location.pathname || '').split('/').filter(Boolean);
+              pageTitle = parts.length ? humanizeSegment(parts[parts.length - 1]) : document.title || '';
+            }
+
+            // Update existing breadcrumb and header so the page looks consistent
+            try {
+              const pageBc = container.querySelector('.breadcrumbs, .breadcrumb, nav[aria-label="breadcrumb"]') || document.querySelector('.breadcrumbs, .breadcrumb, nav[aria-label="breadcrumb"]');
+              if (pageBc) {
+                pageBc.innerText = breadcrumbText;
+              } else if (firstHeader && firstHeader.parentNode) {
+                const small = document.createElement('div');
+                small.className = 'breadcrumbs lc-injected-breadcrumbs';
+                small.style.fontSize = '13px';
+                small.style.opacity = '0.75';
+                small.style.marginBottom = '6px';
+                small.innerText = breadcrumbText;
+                firstHeader.parentNode.insertBefore(small, firstHeader);
+              }
+
+              if (firstHeader) {
+                firstHeader.innerText = pageTitle;
+              } else {
+                const h1 = document.createElement('h1');
+                h1.innerText = pageTitle;
+                h1.style.fontSize = '38px'; h1.style.fontWeight = '800';
+                container.insertBefore(h1, container.firstChild);
+              }
+            } catch (e) { console.error('[LearnCraft] header update failed', e); }
+
+            // Build wrapper with only the video (header updated separately)
+            wrapper.innerHTML = `
+              <div style="width:100%;max-width:920px;">
+                <video id="learncraft-video-embedded" controls playsinline style="width:100%;height:auto;display:block;border-radius:12px;overflow:hidden;background:#000;">
+                  <source src="${videoUrl}" type="video/mp4">
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            `;
+
+            // Prefer to insert after a page header or at the top of the container
+            const headerElem = container.querySelector('h1,h2,h3');
+            if (headerElem && headerElem.parentNode) headerElem.parentNode.insertBefore(wrapper, headerElem.nextSibling);
+            else container.insertBefore(wrapper, container.firstChild);
+
+            const vid = document.getElementById('learncraft-video-embedded');
+            vid.muted = true; vid.setAttribute('muted', ''); vid.setAttribute('playsinline', '');
+            vid.play().catch(() => { vid.controls = true; });
+            vid.addEventListener('canplay', () => vid.play().catch(() => {}));
+            vid.addEventListener('click', function onUserClick() { if (vid.muted) { try { vid.muted = false; vid.removeAttribute('muted'); } catch (e){} } }, { once: true });
+          } catch (err) { console.error('[LearnCraft] insertEmbeddedVideo error', err); }
+        }
+
+        function openInlineVideo(videoUrl, redirectTarget, originBtn) {
+          try {
+            const possibleTarget = redirectTarget || (originBtn && ((originBtn.dataset && originBtn.dataset.__origHref) || (originBtn.getAttribute && originBtn.getAttribute('href'))));
+            const isTopicPath = possibleTarget && (possibleTarget.toString().indexOf('/topics/') !== -1 || possibleTarget.toString().indexOf('/subjects/') !== -1);
+
+            // If the click refers to a topic/subject route, navigate there and let the SPA render the proper page component
+            if (isTopicPath) {
+              const newPath = possibleTarget.startsWith('/') ? possibleTarget : '/' + possibleTarget;
+              window.history.pushState({}, '', newPath);
+              window.dispatchEvent(new PopStateEvent('popstate'));
+              return;
+            }
+
+            // If we're already on a topic/subject page, insert the embedded player into the page
+            if ((location.pathname || '').indexOf('/topics/') !== -1 || (location.pathname || '').indexOf('/subjects/') !== -1) {
+              insertEmbeddedVideo(videoUrl || defaultVideoPath, redirectTarget || '', originBtn);
+              return;
+            }
+
+            // Fallback: insert embedded player into current page
+            insertEmbeddedVideo(videoUrl || defaultVideoPath, redirectTarget || '', originBtn);
+          } catch (err) { console.error('[LearnCraft] openInlineVideo error', err); }
+        }
+
+        // expose globally
+        window.LearnCraftOpenInlineVideo = openInlineVideo;
+
+        // When the SPA navigates (popstate), check for a pending video to open embedded
+        window.addEventListener('popstate', function() {
+          try {
+            if (window.__lc_pendingVideo) {
+              const p = window.__lc_pendingVideo;
+              // small delay to allow React to render the topic content
+              setTimeout(() => {
+                const originStub = p.title ? { dataset: { __lcTitle: p.title } } : null;
+                insertEmbeddedVideo(p.videoUrl || defaultVideoPath, p.redirectTarget || '', originStub);
+              }, 200);
+              delete window.__lc_pendingVideo;
+            }
+          } catch (e) { console.error('[LearnCraft] popstate handler error', e); }
+        });
+
+        // intercept pointerdown to prevent SPA navigation
+        document.addEventListener('pointerdown', function(e) {
+          try {
+            const el = e.target.closest && e.target.closest('a,button,div');
+            if (!el) return;
+            const txt = (el.innerText || '').trim().toLowerCase();
+            const href = el.getAttribute && el.getAttribute('href');
+            // helper: search ancestors for a stored original href
+            function findClosestHref(node) {
+              if (!node) return null;
+              if (node.dataset && node.dataset.__origHref) return node.dataset.__origHref;
+              const a = node.querySelector && node.querySelector('a[data-__orig-href], a');
+              if (a && a.dataset && a.dataset.__origHref) return a.dataset.__origHref;
+              if (node.parentElement) return findClosestHref(node.parentElement);
+              return null;
+            }
+            const nearestHref = findClosestHref(el) || href || (el.dataset && el.dataset.__origHref) || null;
+            const isUnderstanding = txt.includes('understanding fractions') || txt.includes('understanding fraction') || (nearestHref && (nearestHref.indexOf('/topics/') !== -1 || nearestHref.indexOf('/subjects/') !== -1)) || (href && href.indexOf('proper-fractions') !== -1);
+            if (isUnderstanding && nearestHref && (nearestHref.indexOf('/topics/') !== -1 || nearestHref.indexOf('/subjects/') !== -1)) {
+              e.preventDefault(); e.stopImmediatePropagation();
+              openInlineVideo(defaultVideoPath, nearestHref, el);
+            }
+          } catch (err) { console.error(err); }
+        }, true);
+
+        // attempt to bind card element on load
+        setTimeout(() => {
+          try {
+            // Bind any card or element that mentions "Understanding Fractions"
+            const nodes = Array.from(document.querySelectorAll('a,button,div,section,article'));
+            nodes.forEach(node => {
+              try {
+                const text = (node.innerText || '').toLowerCase();
+                if (!text.includes('understanding fractions') && !text.includes('understanding fraction')) return;
+                node.style.cursor = 'pointer';
+                // find nearest anchor href to use as redirect target
+                const a = node.querySelector && node.querySelector('a[href]');
+                if (a && a.getAttribute('href')) { node.dataset.__origHref = a.getAttribute('href'); a.dataset.__origHref = a.getAttribute('href'); a.removeAttribute('href'); }
+                // store a readable title if the node clearly contains the topic name
+                if ((node.innerText || '').toLowerCase().includes('understanding fractions')) {
+                  node.dataset.__lcTitle = 'Understanding Fractions';
+                } else if ((node.innerText || '').trim().length && (node.innerText || '').trim().length < 60) {
+                  // as a fallback, store a short snippet as title
+                  node.dataset.__lcTitle = (node.innerText || '').trim().split('\n')[0].trim();
+                }
+                if (!node.__lcBound) {
+                  node.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); openInlineVideo(defaultVideoPath, node.dataset && node.dataset.__origHref ? node.dataset.__origHref : '', node); }, true);
+                  node.__lcBound = true;
+                }
+              } catch (e) { /* ignore per-node */ }
+            });
+          } catch (e) { console.error(e); }
+        }, 300);
+
+        // insert floating play button if on proper-fractions path
+        setTimeout(() => {
+          try {
+            if (location.pathname.indexOf('/topics/proper-fractions') !== -1 && !document.getElementById('lc-floating-play')) {
+              const fb = document.createElement('button');
+              fb.id = 'lc-floating-play'; fb.innerText = '▶ Play Video';
+              Object.assign(fb.style, { position: 'fixed', right: '18px', bottom: '18px', zIndex: '99999', padding: '12px 16px', borderRadius: '12px', background: '#6b46c1', color: '#fff', boxShadow: '0 10px 30px rgba(0,0,0,0.4)', border: 'none', cursor: 'pointer' });
+              fb.onclick = (ev) => { ev.stopPropagation(); ev.preventDefault(); openInlineVideo(defaultVideoPath, '', fb); };
+              document.body.appendChild(fb);
+            }
+          } catch (e) { console.error(e); }
+        }, 600);
+      });
+    </script>

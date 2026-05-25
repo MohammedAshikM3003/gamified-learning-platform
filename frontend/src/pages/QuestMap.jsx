@@ -1,20 +1,49 @@
 import React, { useMemo } from 'react';
-import { Map, Lock, Unlock, Crosshair, Skull, BookOpen } from 'lucide-react';
+import { Map, Lock, Unlock, Crosshair, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useProgress } from '../context/UserProgressContext';
-import { getChaptersBySubject } from '../data/learningData';
+import { getChaptersBySubject, learningData } from '../data/learningData';
 import '../pages/dashboard.css';
 
 export default function QuestMap() {
   const navigate = useNavigate();
-  const { grade, mySubjectObjects, isTopicUnlocked, isTopicCompleted } = useProgress();
+  const { grade, mySubjectObjects, isTopicUnlocked, isTopicCompleted, questProgressById, startQuestNode, completeQuestNode, isQuestNodeUnlocked } = useProgress();
 
   // Build the dynamic worlds based on user's active subjects and their topics
   const worlds = useMemo(() => {
-    return mySubjectObjects.map((subject, index) => {
+    // Build a combined subject list: user-selected subjects + any subjects present in the grade learning data
+    const gradeData = learningData[grade] || {};
+    const gradeSubjectKeys = Object.keys(gradeData.subjects || {});
+
+    const existingIds = new Set(mySubjectObjects.map(s => s.id));
+    const combinedSubjects = [...mySubjectObjects];
+    // add any grade-defined subjects that aren't in mySubjectObjects so their chapters (e.g., programming/python) appear
+    for (const key of gradeSubjectKeys) {
+      if (!existingIds.has(key)) {
+        const subj = gradeData.subjects[key];
+        combinedSubjects.push({ id: key, name: subj.title || key, label: subj.title || key, color: subj.color || 'var(--accent-cyan)' });
+      }
+    }
+
+    return combinedSubjects.map((subject, index) => {
       // Get all topics for this subject across all its chapters
-      const chapters = getChaptersBySubject(grade, subject.id);
+      let chapters = getChaptersBySubject(grade, subject.id);
+      // Fallback: some grade data groups Python under a different subject key (e.g., 'programming').
+      // If no chapters were found for the subject id, try to find a matching subject in the grade data
+      // whose chapter keys or topic ids contain the subject id (common mismatch: 'python' vs 'programming').
+      if (!chapters || Object.keys(chapters).length === 0) {
+        const gradeSubjs = learningData[grade]?.subjects || {};
+        for (const [sKey, sVal] of Object.entries(gradeSubjs)) {
+          const hasChapterKey = Object.keys(sVal.chapters || {}).some(k => k.toLowerCase().includes((subject.id || '').toLowerCase()));
+          const hasTopicMatch = Object.values(sVal.chapters || {}).some(ch => (ch.topics || []).some(t => (t.id || '').toLowerCase().includes((subject.id || '').toLowerCase())));
+          const titleMatch = (sVal.title || '').toLowerCase().includes((subject.id || '').toLowerCase());
+          if (hasChapterKey || hasTopicMatch || titleMatch) {
+            chapters = sVal.chapters || {};
+            break;
+          }
+        }
+      }
       const allTopics = [];
       for (const chapter of Object.values(chapters)) {
         if (chapter.topics) {
@@ -25,7 +54,7 @@ export default function QuestMap() {
       // Calculate progress
       const completedCount = allTopics.filter(t => isTopicCompleted(t.id)).length;
       const totalCount = allTopics.length;
-      
+
       let status = 'locked';
       if (totalCount === 0) {
         status = 'locked';
@@ -36,24 +65,56 @@ export default function QuestMap() {
       }
 
       // Generate nodes for the UI based on topics
-      const nodes = allTopics.map(topic => ({
-        id: topic.id,
-        isCompleted: isTopicCompleted(topic.id),
-        isUnlocked: isTopicUnlocked(topic.id),
-      }));
+      const nodes = allTopics.map(topic => {
+        const questId = `quest-${topic.id}`;
+        const questProg = questProgressById.get(questId) || {};
+        return {
+          id: topic.id,
+          questId,
+          title: topic.title || topic.id,
+          questions: topic.questions?.length || 0,
+          isCompleted: questProg.completed === true || isTopicCompleted(topic.id),
+          isUnlocked: questProg?.status === 'in-progress' || isTopicUnlocked(topic.id) || isQuestNodeUnlocked(questId, { unlockRequirement: topic.unlockRequirement }),
+        };
+      });
 
       return {
         id: subject.id,
-        name: subject.label.toUpperCase(),
-        color: subject.color,
+        name: (subject.label || subject.name || subject.title || subject.id).toUpperCase(),
+        color: subject.color || subject.color || '#8b5cf6',
         status,
         nodes,
         totalCount,
         completedCount,
-        isBoss: false // Could be enhanced later to check for actual boss topics
+        isBoss: false
       };
     });
-  }, [grade, mySubjectObjects, isTopicUnlocked, isTopicCompleted]);
+  }, [grade, mySubjectObjects, isTopicUnlocked, isTopicCompleted, questProgressById, isQuestNodeUnlocked]);
+
+  // Debug: log worlds to help diagnose missing Explore buttons (Python visibility)
+  // This will appear in browser console when QuestMap renders.
+  if (process.env.NODE_ENV !== 'production') {
+    // small delay to avoid spamming during fast renders
+    setTimeout(() => console.debug('[QuestMap] worlds debug', worlds), 50);
+  }
+
+  const handleNodeClick = async (node) => {
+    if (!node.isUnlocked) {
+      alert('This node is locked. Complete the prerequisite first.');
+      return;
+    }
+
+    // start quest progress record
+    await startQuestNode(`quest-${node.id}`);
+
+    // navigate to the topic page where user can launch games/practice
+    navigate(`/topics/${node.id}`);
+  };
+
+  const handleQuickComplete = async (node) => {
+    await completeQuestNode(`quest-${node.id}`, { xp: 10, meta: { quickComplete: true } });
+    alert(`Completed ${node.title} — +10 XP`);
+  };
 
   return (
     <div className="dashboard-content">
@@ -116,6 +177,7 @@ export default function QuestMap() {
                   <h3 className="section-title" style={{ fontSize: '24px', color: world.status === 'locked' ? 'var(--text-dim)' : 'white' }}>
                     {world.name}
                   </h3>
+                  <div className="small-muted" style={{ marginTop: '6px' }}>{world.completedCount}/{world.totalCount} topics</div>
                   
                   {/* Topic Nodes Graph */}
                   {world.nodes.length > 0 ? (
@@ -123,7 +185,7 @@ export default function QuestMap() {
                       {world.nodes.map((node, i) => (
                         <div 
                           key={node.id} 
-                          title={node.id}
+                          title={node.title}
                           style={{
                             width: '24px', height: '24px', borderRadius: '50%',
                             background: node.isCompleted ? 'var(--success)' : 
@@ -131,14 +193,16 @@ export default function QuestMap() {
                             border: '2px solid var(--color-bg)',
                             boxShadow: node.isUnlocked && !node.isCompleted ? `0 0 10px ${world.color}` : 'none',
                             cursor: node.isUnlocked ? 'pointer' : 'not-allowed',
-                            opacity: node.isUnlocked ? 1 : 0.5
+                            opacity: node.isUnlocked ? 1 : 0.5,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
                           }} 
-                          onClick={() => {
-                            if (node.isUnlocked && !node.isCompleted) {
-                                navigate(`/topics/${node.id}`);
-                            }
+                          onClick={async () => {
+                            if (!node.isUnlocked) return;
+                            await startQuestNode(`quest-${node.id}`);
+                            navigate(`/topics/${node.id}`);
                           }}
-                        />
+                        >
+                        </div>
                       ))}
                     </div>
                   ) : (

@@ -124,6 +124,32 @@ export async function getBossProgress(userId, bossId) {
   return snap.exists() ? snap.data() : null;
 }
 
+export async function getQuestNode(userId, nodeId) {
+  if (!userId || !nodeId) return null;
+  const ref = doc(db, 'userProgress', userId, 'quests', nodeId);
+  const snap = await getDoc(ref);
+  return snap.exists() ? snap.data() : null;
+}
+
+export async function saveQuestNodeProgress(userId, nodeId, payload = {}) {
+  if (!userId || !nodeId) throw new Error('userId and nodeId required');
+
+  const nodeRef = doc(db, 'userProgress', userId, 'quests', nodeId);
+  const patch = {
+    nodeId,
+    status: payload.status || 'in-progress',
+    meta: payload.meta || null,
+    xpEarned: Math.max(0, toNumber(payload.xpEarned, 0)),
+    completed: payload.completed === true || false,
+    startedAt: payload.startedAt || serverTimestamp(),
+    completedAt: payload.completed ? serverTimestamp() : null,
+    updatedAt: serverTimestamp()
+  };
+
+  await setDoc(nodeRef, patch, { merge: true });
+  return (await getDoc(nodeRef)).data();
+}
+
 export function isBossUnlocked(progress, passScore = PASS_SCORE) {
   if (!progress) return false;
   const bestScore = computeBestScore(progress.bestScore, progress.score);
@@ -365,4 +391,7 @@ export default {
   isBossUnlocked,
   saveBossCompletion,
   incrementXP
+  ,
+  getQuestNode,
+  saveQuestNodeProgress
 };

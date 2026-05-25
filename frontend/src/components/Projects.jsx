@@ -16,36 +16,42 @@ export const Projects = () => {
 const { t } = useTranslation(); // ⬅️ add this
   const projects = useMemo(() => [
     {
-      title: t("how_to_play"),
-      description: t("learn_with"),
+      title: "Rocket Adventure",
+      description: "Explore trajectories and forces in a short rocket-themed lesson.",
+      extraText: "Grade: 4–6 • Duration: 10 min • Topics: motion, force",
       imgUrl: projImg1,
     },
     {
-      title: t("how_to_play"),
-      description: t("learn_with"),
+      title: "Stone-Paper-Scissors",
+      description: "Play and analyse outcomes to learn probability and decision-making.",
+      extraText: "Grade: 2–5 • Duration: 8 min • Topics: probability",
       imgUrl: projImg2,
     },
     {
-      title: t("how_to_play"),
-      description: t("learn_with"),
+      title: "Tom & Jerry Quiz",
+      description: "Match scenes and answer comprehension questions about the story.",
+      extraText: "Grade: 1–3 • Duration: 6 min • Topics: reading",
       imgUrl: projImg3,
     },
     {
-      title: t("how_to_play"),
-      description: t("learn_with"),
+      title: "Candy Math",
+      description: "Solve candy-based puzzles to practice addition and subtraction.",
+      extraText: "Grade: K–2 • Duration: 7 min • Topics: arithmetic",
       imgUrl: projImg4,
     },
     {
-      title: t("how_to_play"),
-      description: t("learn_with"),
+      title: "Cheese Hunt",
+      description: "Guide the mouse through logic puzzles to reach the cheese.",
+      extraText: "Grade: 3–5 • Duration: 12 min • Topics: logic",
       imgUrl: projImg5,
     },
     {
-      title: t("how_to_play"),
-      description: t("learn_with"),
+      title: "Flappy Flight",
+      description: "Improve timing and reflexes by navigating obstacles.",
+      extraText: "Grade: 2–6 • Duration: 5 min • Topics: coordination",
       imgUrl: projImg6,
     },
-  ], [t]);
+  ], []);
 
   return (
     <section className="project" id="projects">

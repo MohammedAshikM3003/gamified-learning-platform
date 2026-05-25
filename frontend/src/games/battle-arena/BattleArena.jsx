@@ -1,22 +1,19 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/UserProgressContext';
-import { battleEngine } from '../../game-engine/battleEngine';
 import { xpEngine } from '../../game-engine/xpEngine';
 import { enemies } from './battleData';
-import FighterPlayer from './FighterPlayer';
-import FighterEnemy from './FighterEnemy';
+import StreetFighterEmbed from './StreetFighterEmbed';
 import QuestionCard from './QuestionCard';
 import ComboSystem from './ComboSystem';
 import RewardPopup from './RewardPopup';
 import AttackEffects from './AttackEffects';
-import DamageText from './DamageText';
-import SpecialAbility from './SpecialAbility';
 import '../../pages/dashboard.css';
 
-const PLAYER_MAX_HP = 100;
+const TURN_SECONDS = 5;
+const BACKEND_PORTS = ['8766', '8765'];
 
 export default function BattleArena({ topic }) {
   const navigate = useNavigate();
@@ -28,59 +25,45 @@ export default function BattleArena({ topic }) {
 
   // ─── Game State ───────────────────────────────────────────
   const [gamePhase, setGamePhase] = useState('idle');
-  const [enemyHp, setEnemyHp] = useState(enemy.health);
-  const [playerHp, setPlayerHp] = useState(PLAYER_MAX_HP);
   const [questionIdx, setQuestionIdx] = useState(0);
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
   const [totalXp, setTotalXp] = useState(0);
   const [answerLocked, setAnswerLocked] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(TURN_SECONDS);
 
   // ─── Animation State ──────────────────────────────────────
   const [playerState, setPlayerState] = useState('idle');
   const [enemyState, setEnemyState] = useState('idle');
   const [flashEffect, setFlashEffect] = useState(null);
-  const [damageEvents, setDamageEvents] = useState([]);
-  const [specialTrigger, setSpecialTrigger] = useState(0);
   const [arenaShake, setArenaShake] = useState(false);
-
-  const damageIdRef = useRef(0);
-  const currentQuestion = questions[questionIdx % questions.length];
-
-  // ─── Spawn a floating damage number ───────────────────────
-  const spawnDamage = (value, type, side) => {
-    const id = ++damageIdRef.current;
-    setDamageEvents(prev => [...prev, { id, value, type, side }]);
-    setTimeout(() => setDamageEvents(prev => prev.filter(e => e.id !== id)), 1000);
-  };
-
+  const currentQuestion = questions[questionIdx] || null;
   // ─── Combat Pipeline ──────────────────────────────────────
   const handleAnswer = useCallback(async (isCorrect) => {
     if (answerLocked) return;
     setAnswerLocked(true);
+    setTimeLeft(0);
+    const isLastQuestion = questionIdx >= questions.length - 1;
 
     if (isCorrect) {
       const newCombo = combo + 1;
       const multiplier = xpEngine.getComboMultiplier(newCombo);
       const xpGained = xpEngine.calculateXP(topic.difficulty, multiplier);
-      const damage = battleEngine.calculateDamage(topic.difficulty, newCombo);
-      const newEnemyHp = Math.max(0, enemyHp - damage);
       const isSpecial = newCombo >= 5;
 
       // 1. Player attacks
       setPlayerState('attack');
+      // Inform external Street Fighter process (if running)
+      sendControl('player_attack');
       if (isSpecial) {
         setFlashEffect('special');
-        setSpecialTrigger(t => t + 1);
       } else {
         setFlashEffect('player-attack');
       }
 
       // 2. Enemy takes hit (slight delay for impact feel)
       setTimeout(() => {
-        setEnemyState(newEnemyHp <= 0 ? 'dead' : 'damaged');
-        spawnDamage(damage, 'damage', 'enemy');
-        spawnDamage(xpGained, 'xp', 'player');
+        setEnemyState('damaged');
       }, 200);
 
       // 3. Update stats
@@ -88,16 +71,15 @@ export default function BattleArena({ topic }) {
         setCombo(newCombo);
         setMaxCombo(prev => Math.max(prev, newCombo));
         setTotalXp(prev => prev + xpGained);
-        setEnemyHp(newEnemyHp);
         setFlashEffect(null);
       }, 300);
 
       // 4. Reset animation states + advance
       setTimeout(async () => {
         setPlayerState('idle');
-        setEnemyState(newEnemyHp <= 0 ? 'dead' : 'idle');
+        setEnemyState('idle');
 
-        if (newEnemyHp <= 0) {
+        if (isLastQuestion) {
           const finalXp = totalXp + xpGained;
           // ✅ Context handles: XP save, topic unlock, achievement check
           await completeBattle({
@@ -112,52 +94,94 @@ export default function BattleArena({ topic }) {
 
         setQuestionIdx(prev => prev + 1);
         setAnswerLocked(false);
+        setTimeLeft(TURN_SECONDS);
       }, 900);
 
     } else {
       // Wrong answer — enemy attacks player
-      const damage = battleEngine.calculatePlayerDamage(topic.difficulty);
-      const newPlayerHp = Math.max(0, playerHp - damage);
-
       // 1. Enemy attacks
       setEnemyState('attack');
       setFlashEffect('enemy-attack');
+      // Inform external Street Fighter process (if running)
+      sendControl('enemy_attack');
       setArenaShake(true);
       setTimeout(() => setArenaShake(false), 400);
 
       // 2. Player takes hit
       setTimeout(() => {
         setPlayerState('damaged');
-        spawnDamage(damage, 'damage', 'player');
       }, 200);
 
       // 3. Update stats
       setTimeout(() => {
         setCombo(0);
-        setPlayerHp(newPlayerHp);
         setFlashEffect(null);
       }, 300);
 
       // 4. Reset + advance
-      setTimeout(() => {
+      setTimeout(async () => {
         setPlayerState('idle');
         setEnemyState('idle');
 
-        if (newPlayerHp <= 0) {
-          setGamePhase('defeat');
+        if (isLastQuestion) {
+          const finalXp = totalXp;
+          await completeBattle({
+            topicId: topic.id,
+            xpGained: finalXp,
+            comboMax: maxCombo,
+            won: true,
+          });
+          setTimeout(() => setGamePhase('victory'), 400);
           return;
         }
 
         setQuestionIdx(prev => prev + 1);
         setAnswerLocked(false);
+        setTimeLeft(TURN_SECONDS);
       }, 900);
     }
-  }, [answerLocked, combo, enemyHp, playerHp, topic, totalXp, userProfile]);
+  }, [answerLocked, combo, maxCombo, questionIdx, questions.length, topic, totalXp, completeBattle]);
+
+  React.useEffect(() => {
+    if (gamePhase !== 'fighting' || answerLocked) return undefined;
+
+    if (timeLeft <= 0) {
+      handleAnswer(false);
+      return undefined;
+    }
+
+    const timerId = window.setInterval(() => {
+      setTimeLeft(prev => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [answerLocked, gamePhase, handleAnswer, timeLeft]);
+
+  // Send control commands to the local Python control server (if available).
+  const sendControl = async (cmd) => {
+    try {
+      for (const port of BACKEND_PORTS) {
+        try {
+          const res = await fetch(`http://127.0.0.1:${port}/action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cmd }),
+          });
+          if (!res.ok) continue;
+          const payload = await res.json();
+          if (payload?.ok) return;
+        } catch (error) {
+          // try the next backend port
+        }
+      }
+    } catch (e) {
+      // silent — server may not be running
+      // console.debug('control server error', e);
+    }
+  };
 
   const handleRetry = () => {
     setGamePhase('idle');
-    setEnemyHp(enemy.health);
-    setPlayerHp(PLAYER_MAX_HP);
     setCombo(0);
     setMaxCombo(0);
     setTotalXp(0);
@@ -165,7 +189,7 @@ export default function BattleArena({ topic }) {
     setPlayerState('idle');
     setEnemyState('idle');
     setAnswerLocked(false);
-    setDamageEvents([]);
+    setTimeLeft(TURN_SECONDS);
   };
 
   // ─── PRE-BATTLE SCREEN ────────────────────────────────────
@@ -226,66 +250,30 @@ export default function BattleArena({ topic }) {
       <motion.div
         animate={arenaShake ? { x: [-6, 6, -5, 5, -3, 3, 0] } : { x: 0 }}
         transition={{ duration: 0.4 }}
-        style={{ maxWidth: '900px', margin: '0 auto', padding: '0 20px', position: 'relative' }}
+        style={{ maxWidth: '1180px', margin: '0 auto', padding: '0 20px', position: 'relative' }}
       >
         {/* ── FIGHTER STAGE ─────────────────────────────── */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto 1fr',
-          gap: '16px',
-          alignItems: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '14px',
+          alignItems: 'stretch',
           marginBottom: '24px',
-          padding: '28px',
-          background: 'rgba(10,10,14,0.7)',
+          padding: '20px',
+          background: 'rgba(10,10,14,0.68)',
           borderRadius: '24px',
           border: '1px solid rgba(255,255,255,0.06)',
-          backdropFilter: 'blur(20px)',
+          backdropFilter: 'blur(18px)',
           position: 'relative',
           overflow: 'hidden',
-          minHeight: '200px',
+          minHeight: '560px',
         }}>
-          {/* Background scan line effect */}
-          <div style={{
-            position: 'absolute', inset: 0, zIndex: 0,
-            background: 'repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255,255,255,0.01) 20px, rgba(255,255,255,0.01) 21px)',
-            pointerEvents: 'none',
-          }} />
-
-          {/* Player Fighter */}
-          <div style={{ zIndex: 2 }}>
-            <FighterPlayer
-              playerHp={playerHp}
-              maxHp={PLAYER_MAX_HP}
-              name={userProfile?.fullName?.split(' ')[0] || 'Learner'}
-              state={playerState}
-              subjectId={subjectId}
-            />
+          <div style={{ textAlign: 'center', zIndex: 2, width: '100%', flex: 1 }}>
+            <StreetFighterEmbed />
+            <div style={{ marginTop: '10px' }}>
+              <ComboSystem combo={combo} />
+            </div>
           </div>
-
-          {/* VS + Combo Center */}
-          <div style={{ textAlign: 'center', zIndex: 2, minWidth: '120px' }}>
-            <motion.p
-              animate={{ opacity: [0.4, 1, 0.4] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              style={{ fontSize: '28px', fontWeight: 900, color: 'var(--text-dim)', margin: '0 0 12px' }}
-            >
-              VS
-            </motion.p>
-            <ComboSystem combo={combo} />
-          </div>
-
-          {/* Enemy Fighter */}
-          <div style={{ zIndex: 2 }}>
-            <FighterEnemy enemy={enemy} enemyHp={enemyHp} maxHp={enemy.health} state={enemyState} />
-          </div>
-
-          {/* Floating damage texts */}
-          {damageEvents.map(e => (
-            <DamageText key={e.id} value={e.value} type={e.type} side={e.side} />
-          ))}
-
-          {/* Special ability overlay */}
-          <SpecialAbility subjectId={subjectId} combo={combo} trigger={specialTrigger} />
         </div>
 
         {/* ── QUESTION CARD ─────────────────────────────── */}
@@ -302,6 +290,7 @@ export default function BattleArena({ topic }) {
                 question={currentQuestion}
                 onAnswer={handleAnswer}
                 disabled={answerLocked}
+                timeLeft={timeLeft}
               />
             </motion.div>
           )}
@@ -319,8 +308,8 @@ export default function BattleArena({ topic }) {
               }} />
             ))}
           </div>
-          <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '8px', letterSpacing: '1px' }}>
-            Q {(questionIdx % questions.length) + 1} / {questions.length}
+            <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '8px', letterSpacing: '1px' }}>
+            Q {Math.min(questionIdx + 1, questions.length)} / {questions.length}
           </p>
         </div>
       </motion.div>

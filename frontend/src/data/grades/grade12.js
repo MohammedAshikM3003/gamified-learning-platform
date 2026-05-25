@@ -141,5 +141,29 @@ export const grade12 = {
         },
       },
     },
+    python: {
+      title: 'Python', color: '#3b82f6',
+      description: 'Learn Python — powerful for AI, data, and automation.',
+      chapters: {
+        'python-basics': {
+          title: 'Python Basics',
+          description: 'Learn Python fundamentals and core constructs.',
+          topics: [
+            {
+              id: 'py_vars', title: 'Variables & Types',
+              difficulty: 'easy', xp: 30, game: 'Code Runner',
+              enemy: 'syntax-phantom', estimatedTime: '12 min',
+              recommendedLevel: 6, unlockRequirement: null,
+              rewards: { xp: 30, coins: 14 },
+              description: 'Understand variables, types and basic operations in Python.',
+              questions: [
+                { id: 'g12_py_q1', question: 'Which keyword starts a function in Python?', options: ['func', 'def', 'function', 'fn'], answer: 'def', explanation: "Use 'def' to define functions.", difficulty: 'easy', xp: 6 },
+                { id: 'g12_py_q2', question: 'Which data type is immutable?', options: ['list', 'dict', 'set', 'tuple'], answer: 'tuple', explanation: 'Tuples are immutable ordered sequences.', difficulty: 'easy', xp: 6 },
+              ],
+            },
+          ],
+        },
+      },
+    },
   },
 };

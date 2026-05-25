@@ -1,7 +1,9 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 import { Swords } from 'lucide-react';
 import BattleArenaGame from '../games/battle-arena/BattleArena';
+import { getTopicById } from '../data/learningData';
 import './dashboard.css';
 
 // BattleArena page — thin wrapper, game logic lives in /games/battle-arena/
@@ -25,6 +27,21 @@ export default function BattleArena() {
     ],
   };
 
+  // Try to resolve a personalized topic from URL or user profile
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const topicIdFromUrl = params.get('topicId');
+  const profileTopicId = userProfile?.currentTopicId || userProfile?.lastTopicId || null;
+
+  let resolvedTopic = demoTopic;
+  if (topicIdFromUrl) {
+    const t = getTopicById(topicIdFromUrl);
+    if (t) resolvedTopic = t;
+  } else if (profileTopicId) {
+    const t = getTopicById(profileTopicId);
+    if (t) resolvedTopic = t;
+  }
+
   return (
     <div className="dashboard-content">
       <header className="section-header" style={{ marginBottom: '32px' }}>
@@ -37,7 +54,7 @@ export default function BattleArena() {
         </div>
       </header>
 
-      <BattleArenaGame topic={demoTopic} />
+      <BattleArenaGame topic={resolvedTopic} />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import './App.css'
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import NavBar from './components/NavBar.jsx'
 import { Banner } from './components/Banner'
 import { AboutUs } from './components/AboutUs.jsx'
@@ -22,6 +23,29 @@ const Eleventh = lazy(() => import('./components/Eleventh.jsx'))
 const Twelveth = lazy(() => import('./components/Twelveth.jsx'))
 
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    function handler(e) {
+      try {
+        const from = e && e.detail && e.detail.from ? e.detail.from : null;
+        const encoded = from ? `?from=${encodeURIComponent(from)}` : '';
+        navigate(`/games/fraction${encoded}`);
+      } catch (err) { console.error('navigateToGame handler failed', err); }
+    }
+    window.addEventListener('learncraft:navigateToGame', handler);
+    return () => window.removeEventListener('learncraft:navigateToGame', handler);
+  }, [navigate]);
+
+  useEffect(() => {
+    // If any code navigated to the legacy .html URL, replace it with the SPA route
+    try {
+      if (location && location.pathname && location.pathname.indexOf('fractiongame.html') !== -1) {
+        navigate(`/games/fraction${location.search || ''}`, { replace: true });
+      }
+    } catch (e) { /* ignore */ }
+  }, [location, navigate]);
   return (
     <div className="App">
       <Suspense fallback={<div className="route-loader">Loading...</div>}>

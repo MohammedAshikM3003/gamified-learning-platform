@@ -11,6 +11,7 @@ import { grade9 } from './grades/grade9.js';
 import { grade10 } from './grades/grade10.js';
 import { grade11 } from './grades/grade11.js';
 import { grade12 } from './grades/grade12.js';
+import { college } from './grades/college.js';
 
 // ============================================================
 // Assembled Learning Data — All Grades
@@ -23,6 +24,7 @@ export const learningData = {
   grade10,
   grade11,
   grade12,
+  college,
 };
 
 // ============================================================

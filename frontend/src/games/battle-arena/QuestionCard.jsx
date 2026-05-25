@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle } from 'lucide-react';
 
-export default function QuestionCard({ question, onAnswer, disabled }) {
+export default function QuestionCard({ question, onAnswer, disabled, timeLeft = 5 }) {
   const [selected, setSelected] = useState(null);
   const [feedback, setFeedback] = useState(null); // 'correct' | 'wrong'
+  const progress = Math.max(0, Math.min(100, (timeLeft / 5) * 100));
 
   const handleSelect = (option) => {
     if (disabled || selected) return;
@@ -27,6 +28,24 @@ export default function QuestionCard({ question, onAnswer, disabled }) {
       padding: '40px',
       backdropFilter: 'blur(20px)',
     }}>
+      <div style={{ marginBottom: '22px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <span style={{ fontSize: '11px', letterSpacing: '2px', color: 'var(--text-dim)' }}>
+            ANSWER WINDOW
+          </span>
+          <span style={{ fontSize: '12px', fontWeight: 700, color: 'white' }}>
+            {timeLeft}s
+          </span>
+        </div>
+        <div style={{ height: '8px', borderRadius: '999px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+          <motion.div
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.2, ease: 'linear' }}
+            style={{ height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #f59e0b)' }}
+          />
+        </div>
+      </div>
+
       {/* Question */}
       <AnimatePresence mode="wait">
         <motion.h3

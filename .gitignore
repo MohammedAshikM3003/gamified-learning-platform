@@ -18,6 +18,14 @@ dist-ssr
 .env.*.local
 frontend/.env
 
+# Repo-root scratch exports and imported side projects
+learncraft-context.txt
+learncraft-gamified-platfrom.txt
+quickstartguide.md
+/assets/
+/spec/
+/videos/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

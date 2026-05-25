@@ -30,6 +30,8 @@ export const grade6 = {
               recommendedLevel: 1, unlockRequirement: 'proper-fractions',
               rewards: { xp: 25, coins: 12 },
               description: 'Convert between mixed numbers and improper fractions.',
+              videoPath: '/videos/Improper%20Fractions%20%26%20Mixed%20Numbers%20%20Learning%20Maths_720p.mp4',
+              gameRoute: '/games/mixed-numbers',
               questions: [
                 { id: 'g6_mix_q1', question: 'Convert 2 1/3 to an improper fraction.', options: ['5/3', '7/3', '6/3', '4/3'], answer: '7/3', explanation: '2 × 3 + 1 = 7, so the answer is 7/3.', difficulty: 'easy', xp: 5 },
                 { id: 'g6_mix_q2', question: 'Convert 9/4 to a mixed number.', options: ['2 1/4', '2 2/4', '3 1/4', '1 5/4'], answer: '2 1/4', explanation: '9 ÷ 4 = 2 remainder 1 → 2 1/4.', difficulty: 'easy', xp: 5 },

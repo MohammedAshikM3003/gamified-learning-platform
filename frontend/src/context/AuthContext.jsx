@@ -12,12 +12,19 @@ export const AuthProvider = ({ children }) => {
 
   // Listen to auth state changes
   useEffect(() => {
-    const unsubscribe = authService.onAuthStateChange(async (authUser) => {
+    let unsubscribeProfile = null;
+    const unsubscribeAuth = authService.onAuthStateChange(async (authUser) => {
       if (authUser) {
         setUser(authUser);
         try {
           const profile = await firestoreService.getUserProfile(authUser.uid);
           setUserProfile(profile);
+
+          // Subscribe to realtime profile updates so settings changes propagate immediately
+          if (unsubscribeProfile) unsubscribeProfile();
+          unsubscribeProfile = firestoreService.subscribeToProfile(authUser.uid, (data) => {
+            setUserProfile(data);
+          });
         } catch (err) {
           console.error('Error fetching user profile:', err);
           setError(err.message);
@@ -25,11 +32,18 @@ export const AuthProvider = ({ children }) => {
       } else {
         setUser(null);
         setUserProfile(null);
+        if (unsubscribeProfile) {
+          unsubscribeProfile();
+          unsubscribeProfile = null;
+        }
       }
       setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) unsubscribeProfile();
+    };
   }, []);
 
   const signup = async (email, password, fullName) => {

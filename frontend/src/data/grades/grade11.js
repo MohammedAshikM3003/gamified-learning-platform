@@ -127,6 +127,46 @@ export const grade11 = {
         },
       },
     },
+    python: {
+      title: 'Python', color: '#3b82f6',
+      description: 'Learn Python — the language of AI, data, and automation.',
+      chapters: {
+        'python-basics': {
+          title: 'Python Basics',
+          description: 'Learn Python — the language of AI, data, and automation.',
+          topics: [
+            {
+              id: 'python-variables', title: 'Python Variables & Types',
+              difficulty: 'easy', xp: 25, game: 'Code Runner',
+              enemy: 'syntax-phantom', estimatedTime: '12 min',
+              recommendedLevel: 5, unlockRequirement: null,
+              rewards: { xp: 25, coins: 12 },
+              description: 'Learn Python\'s dynamic typing and basic data types.',
+              questions: [
+                { id: 'g11_py_q1', question: 'Python is a ___ typed language.', options: ['Statically', 'Dynamically', 'Strongly & Statically', 'Weakly'], answer: 'Dynamically', explanation: 'Python determines types at runtime — no type declarations needed.', difficulty: 'easy', xp: 6 },
+                { id: 'g11_py_q2', question: 'How do you print "Hello" in Python?', options: ['console.log("Hello")', 'print("Hello")', 'echo "Hello"', 'puts "Hello"'], answer: 'print("Hello")', explanation: 'Python uses the built-in print() function.', difficulty: 'easy', xp: 5 },
+                { id: 'g11_py_q3', question: 'What is the type of 3.14 in Python?', options: ['int', 'str', 'float', 'decimal'], answer: 'float', explanation: 'Numbers with decimal points are floats in Python.', difficulty: 'easy', xp: 6 },
+                { id: 'g11_py_q4', question: 'Python uses ___ for comments.', options: ['//', '/* */', '#', '--'], answer: '#', explanation: 'Python single-line comments start with #.', difficulty: 'easy', xp: 5 },
+              ],
+            },
+            {
+              id: 'python-functions', title: 'Python Functions',
+              difficulty: 'medium', xp: 40, game: 'Code Runner',
+              enemy: 'null-pointer', estimatedTime: '15 min',
+              recommendedLevel: 5, unlockRequirement: 'python-variables',
+              rewards: { xp: 40, coins: 18 },
+              description: 'Define and call functions, understand scope and return values.',
+              questions: [
+                { id: 'g11_pyfn_q1', question: 'How do you define a function in Python?', options: ['function name():', 'def name():', 'func name():', 'define name():'], answer: 'def name():', explanation: "Python uses the 'def' keyword to define functions.", difficulty: 'easy', xp: 8 },
+                { id: 'g11_pyfn_q2', question: "What does 'return' do in a function?", options: ['Prints the result', 'Sends a value back to the caller', 'Ends the program', 'Loops the function'], answer: 'Sends a value back to the caller', explanation: 'return sends a value back and exits the function.', difficulty: 'easy', xp: 8 },
+                { id: 'g11_pyfn_q3', question: 'A function that calls itself is called?', options: ['Iteration', 'Recursion', 'Lambda', 'Closure'], answer: 'Recursion', explanation: 'A recursive function calls itself with a modified argument until a base case.', difficulty: 'medium', xp: 10 },
+                { id: 'g11_pyfn_q4', question: "What is a Python lambda?", options: ['A loop', 'A class method', 'An anonymous single-expression function', 'A module'], answer: 'An anonymous single-expression function', explanation: 'lambda x: x*2 is equivalent to a small function with no name.', difficulty: 'medium', xp: 10 },
+              ],
+            },
+          ],
+        },
+      },
+    },
     'ai-ml': {
       title: 'AI & ML', color: '#06b6d4',
       description: 'Enter the world of artificial intelligence and machine learning.',

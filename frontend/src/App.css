@@ -1,0 +1,183 @@
+/* LearnCraft public navbar and mobile drawer */
+
+.learncraft-navbar {
+	position: fixed;
+	inset: 0 0 auto 0;
+	z-index: 1000;
+}
+
+.learncraft-navbar-brand,
+.learncraft-nav-links,
+.learncraft-nav-auth {
+	position: relative;
+	z-index: 2;
+}
+
+.learncraft-mobile-toggle {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	border-radius: 14px;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	background: rgba(255, 255, 255, 0.04);
+	padding: 0;
+	position: relative;
+}
+
+.learncraft-mobile-toggle span {
+	display: block;
+	width: 18px;
+	height: 2px;
+	background: #fff;
+	border-radius: 999px;
+	position: absolute;
+}
+
+.learncraft-mobile-toggle span:nth-child(1) {
+	transform: translateY(-6px);
+}
+
+.learncraft-mobile-toggle span:nth-child(2) {
+	transform: translateY(0);
+}
+
+.learncraft-mobile-toggle span:nth-child(3) {
+	transform: translateY(6px);
+}
+
+.learncraft-mobile-overlay {
+	position: fixed;
+	inset: 80px 0 0 0;
+	border: 0;
+	background: rgba(3, 4, 10, 0.58);
+	backdrop-filter: blur(4px);
+	z-index: 998;
+}
+
+.learncraft-mobile-drawer {
+	position: fixed;
+	top: 80px;
+	right: 16px;
+	left: 16px;
+	z-index: 999;
+	padding: 18px;
+	border-radius: 24px;
+	background: rgba(9, 10, 18, 0.96);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+.learncraft-mobile-drawer-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 18px;
+}
+
+.learncraft-mobile-drawer-title {
+	color: #fff;
+	font-size: 18px;
+	font-weight: 800;
+	letter-spacing: -0.3px;
+}
+
+.learncraft-mobile-drawer-subtitle {
+	color: var(--text-secondary);
+	font-size: 12px;
+	margin-top: 4px;
+}
+
+.learncraft-mobile-close {
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	background: rgba(255, 255, 255, 0.05);
+	color: var(--text-primary);
+	border-radius: 999px;
+	padding: 8px 14px;
+}
+
+.learncraft-mobile-links {
+	display: grid;
+	gap: 10px;
+}
+
+.learncraft-mobile-link {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 16px;
+	border-radius: 16px;
+	text-decoration: none;
+	color: var(--text-secondary);
+	background: rgba(255, 255, 255, 0.03);
+	border: 1px solid rgba(255, 255, 255, 0.05);
+	font-weight: 700;
+}
+
+.learncraft-mobile-link.active {
+	color: #fff;
+	border-color: rgba(139, 92, 246, 0.35);
+	background: rgba(139, 92, 246, 0.12);
+}
+
+.learncraft-mobile-actions {
+	display: grid;
+	grid-template-columns: 1fr 1.3fr;
+	gap: 10px;
+	margin-top: 16px;
+}
+
+.learncraft-mobile-secondary,
+.learncraft-mobile-primary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 46px;
+	border-radius: 14px;
+	font-weight: 800;
+	text-decoration: none;
+}
+
+.learncraft-mobile-secondary {
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	background: rgba(255, 255, 255, 0.03);
+	color: var(--text-primary);
+}
+
+.learncraft-mobile-primary {
+	border: 0;
+	background: var(--primary);
+	color: #fff;
+}
+
+@media (max-width: 900px) {
+	.learncraft-navbar {
+		padding: 0 16px !important;
+		gap: 12px;
+	}
+
+	.learncraft-nav-links,
+	.learncraft-nav-auth {
+		display: none !important;
+	}
+
+	.learncraft-mobile-toggle {
+		display: inline-flex;
+	}
+}
+
+@media (max-width: 480px) {
+	.learncraft-mobile-drawer {
+		left: 12px;
+		right: 12px;
+		top: 76px;
+		padding: 16px;
+		border-radius: 20px;
+	}
+
+	.learncraft-mobile-actions {
+		grid-template-columns: 1fr;
+	}
+}
