@@ -96,92 +96,225 @@ def build_info() -> dict:
 
 
 def render_frame_svg(info: dict) -> str:
-    width = 960
-    height = 540
-    t = time.time() - STATE["start_time"]
-    pulse = 8 + math.sin(t * 3.2) * 4
-    glow = 0.2 + (math.sin(t * 2.1) + 1) * 0.12
-    enemy_shift = math.sin(t * 1.4) * 10
-    player_shift = math.cos(t * 1.6) * 8
-    enemy_hp = info["enemy_hp"]
-    player_hp = info["player_hp"]
-    enemy_bar = max(0, int(340 * enemy_hp / 100))
-    player_bar = max(0, int(340 * player_hp / 100))
-    combo = info["player_combo"]
-    message = html.escape(info["message"])
-    last_action = html.escape(info["last_action"])
+        width = 960
+        height = 540
+        t = time.time() - STATE["start_time"]
+        pulse = 8 + math.sin(t * 3.2) * 4
+        glow = 0.2 + (math.sin(t * 2.1) + 1) * 0.12
+        enemy_shift = math.sin(t * 1.4) * 10
+        player_shift = math.cos(t * 1.6) * 8
+        enemy_hp = info["enemy_hp"]
+        player_hp = info["player_hp"]
+        enemy_bar = max(0, int(340 * enemy_hp / 100))
+        player_bar = max(0, int(340 * player_hp / 100))
+        combo = info["player_combo"]
+        combo_glow = 0.15 + min(combo, 8) * 0.05
+        action = (info.get("last_action") or "").lower()
+        is_player_attack = "player" in action
+        is_enemy_attack = "enemy" in action
+        action_flash = 10 if is_player_attack else -10 if is_enemy_attack else 0
+        player_pose = "attack" if is_player_attack else "guard" if is_enemy_attack else "idle"
+        enemy_pose = "hit" if is_player_attack else "attack" if is_enemy_attack else "idle"
+        message = html.escape(info["message"])
+        last_action = html.escape(info["last_action"])
+        star_count = max(1, min(3, 1 + combo // 3))
+        stars = "★" * star_count + "☆" * (3 - star_count)
 
-    return f"""<svg xmlns='http://www.w3.org/2000/svg' width='{width}' height='{height}' viewBox='0 0 {width} {height}'>
-  <defs>
-    <linearGradient id='sky' x1='0' y1='0' x2='0' y2='1'>
-      <stop offset='0%' stop-color='#180f31'/>
-      <stop offset='55%' stop-color='#0b1020'/>
-      <stop offset='100%' stop-color='#06070c'/>
-    </linearGradient>
-    <linearGradient id='stage' x1='0' y1='0' x2='1' y2='1'>
-      <stop offset='0%' stop-color='#2b1c52'/>
-      <stop offset='100%' stop-color='#10121f'/>
-    </linearGradient>
-    <linearGradient id='enemy' x1='0' y1='0' x2='1' y2='1'>
-      <stop offset='0%' stop-color='#ff6b6b'/>
-      <stop offset='100%' stop-color='#d11f4f'/>
-    </linearGradient>
-    <linearGradient id='player' x1='0' y1='0' x2='1' y2='1'>
-      <stop offset='0%' stop-color='#62d2ff'/>
-      <stop offset='100%' stop-color='#1d4ed8'/>
-    </linearGradient>
-    <filter id='glow'>
-      <feGaussianBlur stdDeviation='{pulse}' result='blur'/>
-      <feMerge>
-        <feMergeNode in='blur'/>
-        <feMergeNode in='SourceGraphic'/>
-      </feMerge>
-    </filter>
-  </defs>
+        sparks = []
+        for index in range(6):
+                angle = t * 4 + index * 1.05
+                x = 480 + math.cos(angle) * (120 + combo * 6)
+                y = 250 + math.sin(angle * 1.2) * (55 + combo * 2)
+                size = 4 + (index % 3)
+                sparks.append((x, y, size))
 
-  <rect width='100%' height='100%' fill='url(#sky)'/>
-  <circle cx='150' cy='100' r='{70 + pulse * 2}' fill='#8b5cf6' opacity='{glow}' filter='url(#glow)'/>
-  <circle cx='810' cy='130' r='{60 + pulse * 1.5}' fill='#fb7185' opacity='{glow}' filter='url(#glow)'/>
-  <rect x='0' y='350' width='960' height='190' fill='url(#stage)'/>
-  <ellipse cx='480' cy='365' rx='320' ry='42' fill='#000' opacity='0.25'/>
-  <rect x='170' y='385' width='620' height='18' rx='9' fill='#111827'/>
-  <rect x='188' y='389' width='{player_bar}' height='10' rx='5' fill='url(#player)'/>
-  <rect x='432' y='389' width='{enemy_bar}' height='10' rx='5' fill='url(#enemy)'/>
-  <text x='40' y='378' fill='#dbeafe' font-family='Verdana, sans-serif' font-size='18' font-weight='700'>PLAYER</text>
-  <text x='760' y='378' fill='#fee2e2' font-family='Verdana, sans-serif' font-size='18' font-weight='700'>ENEMY</text>
-  <text x='430' y='378' fill='#cbd5e1' font-family='Verdana, sans-serif' font-size='14' font-weight='600'>ROUND {info['round']}</text>
+        player_attack_fx = (
+                """
+            <path d='M124 92 L184 70 L176 92 L210 96 L156 124 L164 102 Z' fill='#f8fafc' opacity='0.95'/>
+            <path d='M34 102 L-6 116 L24 132 L8 154 L52 140 L42 118 Z' fill='#bfdbfe' opacity='0.75'/>
+                """
+                if player_pose == "attack"
+                else ""
+        )
 
-  <g transform='translate(170 {300 + player_shift})'>
-    <circle cx='70' cy='58' r='28' fill='#f8fafc'/>
-    <rect x='50' y='84' width='40' height='82' rx='14' fill='url(#player)'/>
-    <rect x='31' y='94' width='20' height='56' rx='8' fill='#93c5fd'/>
-    <rect x='89' y='94' width='20' height='56' rx='8' fill='#93c5fd'/>
-    <rect x='50' y='162' width='16' height='66' rx='8' fill='#cbd5e1'/>
-    <rect x='74' y='162' width='16' height='66' rx='8' fill='#cbd5e1'/>
-    <circle cx='70' cy='56' r='34' fill='none' stroke='#62d2ff' stroke-width='3' opacity='0.7'/>
-  </g>
+        player_combo_fx = (
+                """
+            <circle cx='148' cy='92' r='24' fill='none' stroke='#a78bfa' stroke-width='3' opacity='0.75' filter='url(#glow)'/>
+                """
+                if combo >= 3
+                else ""
+        )
 
-  <g transform='translate(630 {292 + enemy_shift})'>
-    <circle cx='70' cy='58' r='30' fill='#fff1f2'/>
-    <rect x='48' y='86' width='44' height='88' rx='16' fill='url(#enemy)'/>
-    <rect x='28' y='96' width='20' height='58' rx='8' fill='#fda4af'/>
-    <rect x='92' y='96' width='20' height='58' rx='8' fill='#fda4af'/>
-    <rect x='52' y='172' width='16' height='68' rx='8' fill='#e5e7eb'/>
-    <rect x='76' y='172' width='16' height='68' rx='8' fill='#e5e7eb'/>
-    <circle cx='70' cy='58' r='38' fill='none' stroke='#fb7185' stroke-width='3' opacity='0.8'/>
-  </g>
+        enemy_attack_fx = (
+                """
+            <path d='M124 90 L188 82 L178 102 L206 120 L152 146 L160 118 Z' fill='#fff1f2' opacity='0.95'/>
+            <path d='M140 88 L188 58 L184 86 L224 84 L186 120 L190 98 Z' fill='#fda4af' opacity='0.95'/>
+                """
+                if enemy_pose == "attack"
+                else ""
+        )
 
-  <rect x='26' y='24' width='908' height='96' rx='18' fill='rgba(0,0,0,0.28)' stroke='rgba(255,255,255,0.08)'/>
-  <text x='50' y='56' fill='#f8fafc' font-family='Verdana, sans-serif' font-size='26' font-weight='800'>LEARNCRAFT STREET FIGHTER</text>
-  <text x='50' y='84' fill='#d1d5db' font-family='Verdana, sans-serif' font-size='16'>Action: {last_action}</text>
-  <text x='50' y='108' fill='#cbd5e1' font-family='Verdana, sans-serif' font-size='14'>Combo {combo} • HP {player_hp}% vs {enemy_hp}%</text>
+        enemy_hit_fx = (
+                """
+            <path d='M-4 106 L42 126 L34 98 L66 86 L18 58 L22 88 Z' fill='#fee2e2' opacity='0.85'/>
+                """
+                if enemy_pose == "hit" or is_enemy_attack
+                else ""
+        )
 
-  <rect x='640' y='42' width='250' height='60' rx='14' fill='rgba(10,10,16,0.55)' stroke='rgba(255,255,255,0.08)'/>
-  <text x='660' y='67' fill='#a78bfa' font-family='Verdana, sans-serif' font-size='14' font-weight='700'>STATUS</text>
-  <text x='660' y='89' fill='#f8fafc' font-family='Verdana, sans-serif' font-size='12'>{message}</text>
+        spark_svg = "".join(
+                f"<circle cx='{int(x)}' cy='{int(y)}' r='{size}' fill='#fde68a' opacity='0.9' filter='url(#glow)'/>"
+                for x, y, size in sparks
+        )
+        star_svg = "".join(
+                f"<circle cx='{int(220 + i * 112 + math.sin(t * 5 + i) * 8)}' cy='{int(210 + math.cos(t * 3 + i) * 6)}' r='2' fill='#fff' opacity='{0.4 + (i % 3) * 0.2}'/>"
+                for i in range(18)
+        )
 
-  <rect x='230' y='450' width='500' height='48' rx='24' fill='rgba(139,92,246,0.12)' stroke='rgba(139,92,246,0.24)'/>
-  <text x='250' y='479' fill='#ede9fe' font-family='Verdana, sans-serif' font-size='15' font-weight='700'>Answer questions to attack. Wrong answers trigger enemy strikes.</text>
+        return f"""<svg xmlns='http://www.w3.org/2000/svg' width='{width}' height='{height}' viewBox='0 0 {width} {height}'>
+    <defs>
+        <style>
+            .pixel {{ shape-rendering: crispEdges; }}
+            .hud {{ font-family: 'Courier New', monospace; letter-spacing: 1px; }}
+        </style>
+        <linearGradient id='sky' x1='0' y1='0' x2='0' y2='1'>
+            <stop offset='0%' stop-color='#180f31'/>
+            <stop offset='40%' stop-color='#0b1020'/>
+            <stop offset='100%' stop-color='#06070c'/>
+        </linearGradient>
+        <linearGradient id='stage' x1='0' y1='0' x2='1' y2='1'>
+            <stop offset='0%' stop-color='#3b236f'/>
+            <stop offset='52%' stop-color='#171a31'/>
+            <stop offset='100%' stop-color='#0a0b16'/>
+        </linearGradient>
+        <linearGradient id='enemy' x1='0' y1='0' x2='1' y2='1'>
+            <stop offset='0%' stop-color='#ff6b6b'/>
+            <stop offset='100%' stop-color='#d11f4f'/>
+        </linearGradient>
+        <linearGradient id='player' x1='0' y1='0' x2='1' y2='1'>
+            <stop offset='0%' stop-color='#62d2ff'/>
+            <stop offset='100%' stop-color='#1d4ed8'/>
+        </linearGradient>
+        <linearGradient id='floor' x1='0' y1='0' x2='0' y2='1'>
+            <stop offset='0%' stop-color='#1f1736'/>
+            <stop offset='100%' stop-color='#07080f'/>
+        </linearGradient>
+        <linearGradient id='beam' x1='0' y1='0' x2='1' y2='0'>
+            <stop offset='0%' stop-color='#fff' stop-opacity='0.05'/>
+            <stop offset='50%' stop-color='#fff' stop-opacity='0.22'/>
+            <stop offset='100%' stop-color='#fff' stop-opacity='0.05'/>
+        </linearGradient>
+        <linearGradient id='textGlow' x1='0' y1='0' x2='1' y2='0'>
+            <stop offset='0%' stop-color='#fde68a'/>
+            <stop offset='50%' stop-color='#f8fafc'/>
+            <stop offset='100%' stop-color='#93c5fd'/>
+        </linearGradient>
+        <filter id='glow'>
+            <feGaussianBlur stdDeviation='{pulse}' result='blur'/>
+            <feMerge>
+                <feMergeNode in='blur'/>
+                <feMergeNode in='SourceGraphic'/>
+            </feMerge>
+        </filter>
+        <filter id='softGlow'>
+            <feGaussianBlur stdDeviation='5' result='blur'/>
+            <feMerge>
+                <feMergeNode in='blur'/>
+                <feMergeNode in='SourceGraphic'/>
+            </feMerge>
+        </filter>
+    </defs>
+
+    <rect width='100%' height='100%' fill='url(#sky)'/>
+    <circle cx='128' cy='94' r='{72 + pulse * 2}' fill='#8b5cf6' opacity='{glow}' filter='url(#glow)'/>
+    <circle cx='820' cy='132' r='{64 + pulse * 1.5}' fill='#fb7185' opacity='{glow}' filter='url(#glow)'/>
+    <circle cx='490' cy='72' r='18' fill='#fde68a' opacity='0.9'/>
+    <rect x='0' y='226' width='960' height='2' fill='#ffffff' opacity='0.07'/>
+
+    <g opacity='0.7'>
+        <rect x='48' y='170' width='62' height='92' rx='8' fill='#2a1b4f'/>
+        <rect x='138' y='148' width='76' height='114' rx='8' fill='#301d56'/>
+        <rect x='742' y='154' width='86' height='108' rx='8' fill='#301d56'/>
+        <rect x='846' y='174' width='52' height='88' rx='8' fill='#2a1b4f'/>
+    </g>
+
+    <rect x='0' y='302' width='960' height='238' fill='url(#stage)'/>
+    <path d='M0 356 L120 342 L240 364 L360 346 L480 362 L600 348 L720 367 L840 344 L960 358 L960 540 L0 540 Z' fill='url(#floor)'/>
+    <path d='M0 378 L960 378' stroke='url(#beam)' stroke-width='6' opacity='0.75'/>
+    <path d='M0 412 L960 412' stroke='rgba(255,255,255,0.05)' stroke-width='2'/>
+    <path d='M0 447 L960 447' stroke='rgba(255,255,255,0.035)' stroke-width='2'/>
+    <path d='M0 486 L960 486' stroke='rgba(255,255,255,0.025)' stroke-width='2'/>
+    <path d='M-40 540 L180 388 L300 540' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='2'/>
+    <path d='M210 540 L360 388 L510 540' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='2'/>
+    <path d='M430 540 L540 388 L690 540' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='2'/>
+    <path d='M670 540 L810 388 L1000 540' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='2'/>
+
+    <ellipse cx='280' cy='392' rx='170' ry='28' fill='rgba(0,0,0,0.26)'/>
+    <ellipse cx='690' cy='392' rx='170' ry='28' fill='rgba(0,0,0,0.26)'/>
+
+    <g transform='translate(70 24)'>
+        <rect x='0' y='0' width='250' height='88' rx='16' fill='rgba(0,0,0,0.28)' stroke='rgba(255,255,255,0.08)'/>
+        <text x='16' y='28' fill='url(#textGlow)' class='hud' font-size='22' font-weight='800'>LEARNCRAFT</text>
+        <text x='16' y='52' fill='#e5e7eb' class='hud' font-size='14'>ARCADE MODE // ROUND {info['round']}</text>
+        <text x='16' y='74' fill='#cbd5e1' class='hud' font-size='12'>ACTION: {last_action}</text>
+    </g>
+
+    <g transform='translate(636 24)'>
+        <rect x='0' y='0' width='250' height='88' rx='16' fill='rgba(0,0,0,0.28)' stroke='rgba(255,255,255,0.08)'/>
+        <text x='18' y='28' fill='#fca5a5' class='hud' font-size='14' font-weight='800'>STATUS</text>
+        <text x='18' y='53' fill='#f8fafc' class='hud' font-size='12'>{message}</text>
+        <text x='18' y='74' fill='#fde68a' class='hud' font-size='12'>COMBO x{combo} • {stars}</text>
+    </g>
+
+    <rect x='170' y='106' width='620' height='18' rx='9' fill='rgba(17,24,39,0.9)' stroke='rgba(255,255,255,0.08)'/>
+    <rect x='188' y='110' width='{player_bar}' height='10' rx='5' fill='url(#player)'/>
+    <rect x='432' y='110' width='{enemy_bar}' height='10' rx='5' fill='url(#enemy)'/>
+    <text x='170' y='100' fill='#dbeafe' class='hud' font-size='18' font-weight='700'>PLAYER</text>
+    <text x='758' y='100' fill='#fee2e2' class='hud' font-size='18' font-weight='700'>ENEMY</text>
+    <text x='430' y='100' fill='#cbd5e1' class='hud' font-size='14' font-weight='600'>HP {player_hp}% / {enemy_hp}%</text>
+
+    <g transform='translate(134 {250 + player_shift})'>
+        <g filter='url(#softGlow)' opacity='{0.55 + combo_glow}'>
+            <ellipse cx='92' cy='164' rx='62' ry='20' fill='#60a5fa' opacity='0.32'/>
+        </g>
+        <g transform='translate({action_flash} 0)'>
+            <ellipse cx='86' cy='54' rx='18' ry='22' fill='#e0f2fe'/>
+            <rect x='60' y='76' width='54' height='76' rx='12' fill='url(#player)'/>
+            <rect x='44' y='88' width='18' height='52' rx='8' fill='#7dd3fc'/>
+            <rect x='112' y='88' width='18' height='52' rx='8' fill='#7dd3fc'/>
+            <rect x='60' y='150' width='16' height='74' rx='8' fill='#cbd5e1'/>
+            <rect x='86' y='150' width='16' height='74' rx='8' fill='#cbd5e1'/>
+            <rect x='51' y='66' width='70' height='14' rx='7' fill='rgba(255,255,255,0.8)' opacity='0.5'/>
+            {player_attack_fx}
+            {player_combo_fx}
+        </g>
+    </g>
+
+    <g transform='translate(654 {236 + enemy_shift})'>
+        <g filter='url(#softGlow)' opacity='{0.55 + combo_glow}'>
+            <ellipse cx='86' cy='188' rx='66' ry='22' fill='#fb7185' opacity='0.32'/>
+        </g>
+        <g transform='translate({-action_flash} 0)'>
+            <ellipse cx='84' cy='54' rx='20' ry='24' fill='#ffe4e6'/>
+            <rect x='58' y='78' width='56' height='82' rx='14' fill='url(#enemy)'/>
+            <rect x='38' y='92' width='18' height='56' rx='8' fill='#fda4af'/>
+            <rect x='114' y='92' width='18' height='56' rx='8' fill='#fda4af'/>
+            <rect x='62' y='160' width='16' height='78' rx='8' fill='#e5e7eb'/>
+            <rect x='88' y='160' width='16' height='78' rx='8' fill='#e5e7eb'/>
+            <rect x='50' y='66' width='72' height='14' rx='7' fill='rgba(255,255,255,0.85)' opacity='0.45'/>
+            {enemy_attack_fx}
+            {enemy_hit_fx}
+        </g>
+    </g>
+
+    {spark_svg}
+    {star_svg}
+
+    <rect x='24' y='444' width='912' height='70' rx='20' fill='rgba(0,0,0,0.34)' stroke='rgba(255,255,255,0.08)'/>
+    <text x='46' y='475' fill='#f8fafc' class='hud' font-size='15' font-weight='700'>RETRO BATTLE READY</text>
+    <text x='46' y='500' fill='#cbd5e1' class='hud' font-size='12'>Press START to enter the arena, then answer to attack and build combo power.</text>
+    <text x='684' y='475' fill='#fde68a' class='hud' font-size='15' font-weight='700'>SCORE FX</text>
+    <text x='684' y='500' fill='#cbd5e1' class='hud' font-size='12'>Stars {stars} • Combo x{combo} • Round {info['round']}</text>
 </svg>"""
 
 

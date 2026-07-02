@@ -62,6 +62,14 @@ This guide explains how to complete the Firebase Google authentication setup for
 5. Select or create a Google Cloud project
 6. Configure the consent screen if needed
 
+### Step 3.1: Authorize Your Deployment Domains
+
+1. In Firebase Console, go to **Authentication** -> **Settings** -> **Authorized domains**
+2. Add every deployed frontend hostname you use, including your Vercel production domain
+3. Keep `localhost` for local development
+
+If this step is skipped, Firebase will reject Google sign-in with `auth/unauthorized-domain` on Vercel.
+
 ### Step 4: Test the Implementation
 
 1. Start the development server:

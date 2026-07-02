@@ -26,7 +26,9 @@ function Login() {
       navigate("/dashboard");
     } catch (err) {
       console.error("Google login error:", err);
-      if (err.code === "auth/popup-blocked") {
+      if (err.code === "auth/unauthorized-domain") {
+        setError("This Vercel domain is not authorized in Firebase Authentication. Add the deployed hostname to Authorized domains, then try again.");
+      } else if (err.code === "auth/popup-blocked") {
         setError("Popup was blocked. Please allow popups and try again.");
       } else if (err.code === "auth/popup-closed-by-user") {
         setError("Login cancelled.");
